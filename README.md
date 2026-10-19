@@ -15,7 +15,9 @@ Type a message → tap a tone → copy the rewrite. Native iPhone + Android app 
 | Pro lifetime | $19.99 once | 50 a day, all tones |
 | Top-up packs | $0.99 / $1.99 / $4.99 | +50 / +150 / +500, never expire |
 
-Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then shows the Pro screen (free users) or the top-up screen (Pro users). Pro users can also tap **Pro ✓** to top up any time.
+Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then opens the **store**.
+
+The store is a screen built into the app (`app/Store.js`) where anyone can buy credit packs, with prices shown in their own currency. Open it by tapping **N LEFT TODAY · GET MORE** above the tones, or **Pro ✓** if you're Pro. Free users also see a link to go Pro there.
 
 The backend enforces all of this, so it can't be bypassed by hacking the app. Change the daily numbers with the `FREE_DAILY_LIMIT` and `PRO_DAILY_LIMIT` environment variables in Netlify. Usage is stored in Netlify Blobs, which comes with every Netlify site, so there's nothing extra to set up.
 
@@ -81,8 +83,8 @@ Then set a monthly **spend cap** in Google AI Studio's billing settings (for exa
 3. In RevenueCat:
    - Create an **entitlement** called `pro` and attach the three Pro products to it (not the credit packs).
    - Make the **default Offering** with the three Pro products as Monthly, Annual and Lifetime packages.
-   - Make a second Offering with the identifier `credits` holding the three credit packs.
-4. In RevenueCat **Paywalls**, design a paywall for each offering (no code; the app shows whatever you design there).
+   - Make a second Offering with the identifier `credits` holding the three credit packs. The in-app store reads this offering, so packs you add or reprice show up without an app update (new pack ids also need adding to `limits.js`).
+4. In RevenueCat **Paywalls**, design the Pro paywall for the default offering (no code; the app shows whatever you design there). The credits offering doesn't need a paywall; the app's own store screen shows it.
 5. **Project settings → API keys:**
    - Copy the public iOS key (`appl_…`) and Android key (`goog_…`) into `app/config.js`.
    - Copy the **secret** key (`sk_…`) into Netlify as `REVENUECAT_SECRET_KEY`.

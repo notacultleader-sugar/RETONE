@@ -11,5 +11,5 @@ export const REVENUECAT_ANDROID_KEY = 'goog_YOUR_KEY';
 // The entitlement name you create in RevenueCat for the paid unlock.
 export const PRO_ENTITLEMENT = 'pro';
 
-// The RevenueCat offering that holds the top-up credit packs (see README.md, step 3).
+// The RevenueCat offering that holds the credit packs shown in the in-app store (see README.md, step 3).
 export const CREDITS_OFFERING = 'credits';
