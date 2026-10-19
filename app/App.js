@@ -15,9 +15,10 @@ import Purchases from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import MoodBackground from './MoodBackground';
+import Store from './Store';
 import { TONES } from './tones';
 import {
-  API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT, CREDITS_OFFERING,
+  API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT,
 } from './config';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -71,6 +72,7 @@ function Main() {
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [left, setLeft] = useState(null); // { today, credits } from the backend
+  const [storeOpen, setStoreOpen] = useState(false);
   const threadRef = useRef(null);
   const pop = useRef(new Animated.Value(1)).current;
 
@@ -100,20 +102,6 @@ function Main() {
       }
     } catch (e) {
       Alert.alert('Store unavailable', 'Purchases aren\'t set up on this build yet.');
-    }
-    return false;
-  }, []);
-
-  // Credit packs live in their own RevenueCat offering + paywall.
-  const openTopUp = useCallback(async () => {
-    try {
-      const offerings = await Purchases.getOfferings();
-      const offering = offerings.all[CREDITS_OFFERING];
-      if (!offering) throw new Error('no credits offering');
-      const outcome = await RevenueCatUI.presentPaywall({ offering });
-      return outcome === PAYWALL_RESULT.PURCHASED;
-    } catch (e) {
-      Alert.alert('Store unavailable', 'Top-ups aren\'t set up on this build yet.');
     }
     return false;
   }, []);
@@ -164,8 +152,8 @@ function Main() {
       if (data?.code === 'limit') {
         setLeft(data.left);
         setOriginal('');
-        const bought = data.pro ? await openTopUp() : await openPaywall();
-        if (bought) { await refreshLeft(); setError('You\'re topped up. Tap a tone again.'); } else setError(data.error);
+        setError(data.error);
+        setStoreOpen(true);
         return;
       }
       if (!res.ok) throw new Error(data?.error || 'Something went wrong');
@@ -178,7 +166,7 @@ function Main() {
     } finally {
       setLoading(false);
     }
-  }, [message, isPro, userId, openPaywall, openTopUp, refreshLeft, loading, pop]);
+  }, [message, isPro, userId, openPaywall, loading, pop]);
 
   // --- Copy ------------------------------------------------------------
   const doCopy = useCallback(async () => {
@@ -208,7 +196,7 @@ function Main() {
           <View style={styles.header}>
             <Text style={styles.logo}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
             {isPro ? (
-              <TouchableOpacity onPress={openTopUp} style={[styles.pill, styles.pillPro]}>
+              <TouchableOpacity onPress={() => setStoreOpen(true)} style={[styles.pill, styles.pillPro]}>
                 <Text style={styles.pillProText}>Pro ✓</Text>
               </TouchableOpacity>
             ) : (
@@ -282,9 +270,15 @@ function Main() {
 
           {/* tone strip */}
           <View style={styles.stripHead}>
-            <Text style={styles.stripLabel}>
-              TAP A TONE{left ? `  ·  ${left.today} LEFT TODAY${left.credits ? ` + ${left.credits}` : ''}` : ''}
-            </Text>
+            {left ? (
+              <TouchableOpacity onPress={() => setStoreOpen(true)} hitSlop={8}>
+                <Text style={styles.stripLabel}>
+                  {left.today} LEFT TODAY{left.credits ? ` + ${left.credits}` : ''}  ·  <Text style={{ color: active.a }}>GET MORE</Text>
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.stripLabel}>TAP A TONE</Text>
+            )}
             <Text style={styles.stripLabel}>SWIPE →</Text>
           </View>
           <ScrollView
@@ -324,6 +318,15 @@ function Main() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      <Store
+        visible={storeOpen}
+        onClose={() => setStoreOpen(false)}
+        isPro={isPro}
+        left={left}
+        accent={active.a}
+        onBought={async () => { await refreshLeft(); setError(''); }}
+        onGoPro={openPaywall}
+      />
     </View>
   );
 }
