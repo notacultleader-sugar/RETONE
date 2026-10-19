@@ -1,8 +1,8 @@
 // Fill these in once (see README.md, steps 2–4).
 
 // Your backend address after deploying /backend to Netlify, e.g.
-// https://retone-api.netlify.app/.netlify/functions/retone
-export const API_URL = 'https://YOUR-SITE.netlify.app/.netlify/functions/retone';
+// https://saytwice-api.netlify.app/.netlify/functions/saytwice
+export const API_URL = 'https://YOUR-SITE.netlify.app/.netlify/functions/saytwice';
 
 // RevenueCat public SDK keys (Project settings > API keys in RevenueCat).
 export const REVENUECAT_IOS_KEY = 'appl_YOUR_KEY';

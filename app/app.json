@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Retone",
-    "slug": "retone",
+    "name": "Saytwice",
+    "slug": "saytwice",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#12151f",
     "ios": {
-      "bundleIdentifier": "ca.thesocietybarbers.retone",
+      "bundleIdentifier": "ca.thesocietybarbers.saytwice",
       "supportsTablet": false
     },
     "android": {
-      "package": "ca.thesocietybarbers.retone",
+      "package": "ca.thesocietybarbers.saytwice",
       "permissions": []
     }
   }

@@ -106,7 +106,7 @@ function Main() {
   // Restore lives on the paywall screen (RevenueCat paywalls include a Restore button).
 
   // --- Rewrite ---------------------------------------------------------
-  const retone = useCallback(async (tone) => {
+  const rewrite = useCallback(async (tone) => {
     if (loading) return;
     if (!message.trim()) { setError('Type a message first.'); return; }
     if (!tone.free && !isPro) {
@@ -168,7 +168,7 @@ function Main() {
         >
           {/* header */}
           <View style={styles.header}>
-            <Text style={styles.logo}>RE<Text style={{ color: active.a }}>TONE</Text></Text>
+            <Text style={styles.logo}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
             {isPro ? (
               <View style={[styles.pill, styles.pillPro]}><Text style={styles.pillProText}>Pro ✓</Text></View>
             ) : (
@@ -257,7 +257,7 @@ function Main() {
                 {col.map((t) => (
                   <ToneTile key={t.id} tone={t} active={t.id === active.id}
                     locked={!t.free && !isPro} showFree={t.free && !isPro}
-                    disabled={loading} onPress={() => retone(t)} />
+                    disabled={loading} onPress={() => rewrite(t)} />
                 ))}
               </View>
             ))}
