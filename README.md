@@ -63,7 +63,7 @@ In a terminal, inside the `app` folder:
 
 ```bash
 npm install expo
-npx expo install react react-native expo-status-bar expo-clipboard expo-haptics react-native-safe-area-context react-native-purchases react-native-purchases-ui expo-dev-client
+npx expo install react react-native expo-status-bar expo-clipboard expo-haptics expo-linear-gradient expo-splash-screen expo-font react-native-svg react-native-safe-area-context react-native-purchases react-native-purchases-ui expo-dev-client @expo-google-fonts/unbounded @expo-google-fonts/dm-sans
 npm install -g eas-cli
 eas login
 eas build:configure
@@ -90,11 +90,11 @@ eas submit --platform android
 - App icon and splash screen (add to `app/app.json`)
 - A privacy policy page (messages are sent to Google's AI to be rewritten; say so)
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
-- Apple requires the **Restore purchases** button (already in the app)
+- Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
 
 ## Changing the tones
 
-- Buttons and which are free: `app/tones.js`
+- Buttons, which are free, and each tone's colours and headline word: `app/tones.js`
 - What the AI is told for each tone: `backend/netlify/functions/tones.js`
 
 Keep the `id`s the same in both files. To make a tone free, set `free: true` in **both**.

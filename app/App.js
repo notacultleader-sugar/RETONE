@@ -1,27 +1,57 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, Platform, KeyboardAvoidingView,
+  View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, StyleSheet,
+  Alert, Platform, KeyboardAvoidingView, Animated, Easing,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Unbounded_800ExtraBold, Unbounded_900Black } from '@expo-google-fonts/unbounded';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import Purchases from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
+import MoodBackground from './MoodBackground';
 import { TONES } from './tones';
 import {
   API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT,
 } from './config';
 
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 const MAX_CHARS = 1000;
+const INK = '#0b0b12';
+const TEXT = '#f6f4ff';
+const MUTED = 'rgba(246,244,255,0.62)';
+const GLASS = 'rgba(255,255,255,0.07)';
+const EDGE = 'rgba(255,255,255,0.14)';
+const F = {
+  display: 'Unbounded_800ExtraBold',
+  black: 'Unbounded_900Black',
+  body: 'DMSans_400Regular',
+  medium: 'DMSans_500Medium',
+  bold: 'DMSans_700Bold',
+};
 
 function hasPro(customerInfo) {
   return !!customerInfo?.entitlements?.active?.[PRO_ENTITLEMENT];
 }
 
+// Pair tones into columns of two for the swipeable two-row strip.
+const COLUMNS = TONES.reduce((cols, t, i) => {
+  if (i % 2 === 0) cols.push([t]); else cols[cols.length - 1].push(t);
+  return cols;
+}, []);
+
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Unbounded_800ExtraBold, Unbounded_900Black, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
+  });
+  useEffect(() => { if (fontsLoaded) SplashScreen.hideAsync().catch(() => {}); }, [fontsLoaded]);
+  if (!fontsLoaded) return null;
   return (
     <SafeAreaProvider>
       <Main />
@@ -31,12 +61,17 @@ export default function App() {
 
 function Main() {
   const [message, setMessage] = useState('');
+  const [original, setOriginal] = useState('');
   const [result, setResult] = useState('');
-  const [activeTone, setActiveTone] = useState(null);
+  const [active, setActive] = useState(TONES[0]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [isPro, setIsPro] = useState(false);
   const [userId, setUserId] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const threadRef = useRef(null);
+  const pop = useRef(new Animated.Value(1)).current;
 
   // --- Purchases setup -------------------------------------------------
   useEffect(() => {
@@ -50,7 +85,6 @@ function Main() {
       Purchases.addCustomerInfoUpdateListener(listener);
       return () => Purchases.removeCustomerInfoUpdateListener(listener);
     } catch (e) {
-      // Running without RevenueCat set up yet (e.g. in Expo Go). Free tones still work.
       console.warn('RevenueCat not configured:', e?.message);
     }
   }, []);
@@ -69,34 +103,25 @@ function Main() {
     return false;
   }, []);
 
-  const restore = useCallback(async () => {
-    try {
-      const info = await Purchases.restorePurchases();
-      const pro = hasPro(info);
-      setIsPro(pro);
-      Alert.alert(pro ? 'Restored' : 'Nothing to restore',
-        pro ? 'All tones unlocked.' : 'No previous purchase found on this account.');
-    } catch (e) {
-      Alert.alert('Restore failed', 'Please try again.');
-    }
-  }, []);
+  // Restore lives on the paywall screen (RevenueCat paywalls include a Restore button).
 
   // --- Rewrite ---------------------------------------------------------
   const retone = useCallback(async (tone) => {
-    if (!message.trim()) {
-      Alert.alert('Type something first', 'Write the message you want to send.');
-      return;
-    }
+    if (loading) return;
+    if (!message.trim()) { setError('Type a message first.'); return; }
     if (!tone.free && !isPro) {
       const unlocked = await openPaywall();
       if (!unlocked) return;
     }
 
     Haptics.selectionAsync().catch(() => {});
-    setActiveTone(tone.id);
+    setActive(tone);
+    setOriginal(message.trim());
     setLoading(true);
     setResult('');
+    setError('');
     setCopied(false);
+    setConfirming(false);
 
     try {
       const res = await fetch(API_URL, {
@@ -104,164 +129,281 @@ function Main() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: message.trim(), tone: tone.id, userId }),
       });
-      const data = await res.json();
-      if (res.status === 402) {
-        await openPaywall();
-        return;
-      }
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 402) { await openPaywall(); return; }
       if (!res.ok) throw new Error(data?.error || 'Something went wrong');
       setResult(data.text);
+      pop.setValue(0);
+      Animated.spring(pop, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }).start();
     } catch (e) {
-      Alert.alert('Couldn\'t rewrite that', e.message || 'Check your connection and try again.');
+      setError(e.message || 'Check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, [message, isPro, userId, openPaywall]);
+  }, [message, isPro, userId, openPaywall, loading, pop]);
 
   // --- Copy ------------------------------------------------------------
   const doCopy = useCallback(async () => {
     await Clipboard.setStringAsync(result);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setConfirming(false);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1800);
   }, [result]);
 
-  const copy = useCallback(() => {
-    const tone = TONES.find((t) => t.id === activeTone);
-    if (tone?.confirm) {
-      Alert.alert(
-        'You sure? 🔥',
-        'This one might start a fire. Still want to copy it?',
-        [
-          { text: 'Cool off', style: 'cancel' },
-          { text: 'Copy it', style: 'destructive', onPress: doCopy },
-        ],
-      );
-    } else {
-      doCopy();
-    }
-  }, [activeTone, doCopy]);
+  const onCopy = useCallback(() => {
+    if (active.confirm) setConfirming(true); else doCopy();
+  }, [active, doCopy]);
 
-  const activeLabel = TONES.find((t) => t.id === activeTone)?.label;
+  const scrollToEnd = () => threadRef.current?.scrollToEnd({ animated: true });
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="light" />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <View style={{ flex: 1, backgroundColor: '#07070c' }}>
+      <MoodBackground a={active.a} b={active.b} />
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom', 'left', 'right']}>
+        <StatusBar style="light" />
+        <KeyboardAvoidingView
+          style={styles.app}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* header */}
           <View style={styles.header}>
-            <Text style={styles.logo}>Retone</Text>
-            {!isPro && (
-              <TouchableOpacity onPress={openPaywall} style={styles.proPill}>
-                <Text style={styles.proPillText}>Unlock all ✨</Text>
+            <Text style={styles.logo}>RE<Text style={{ color: active.a }}>TONE</Text></Text>
+            {isPro ? (
+              <View style={[styles.pill, styles.pillPro]}><Text style={styles.pillProText}>Pro ✓</Text></View>
+            ) : (
+              <TouchableOpacity onPress={openPaywall} style={styles.pill}>
+                <Text style={styles.pillText}>Unlock all</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <Text style={styles.label}>What do you want to say?</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholder="Type your message…"
-            placeholderTextColor="#6b6b78"
-            value={message}
-            onChangeText={(t) => setMessage(t.slice(0, MAX_CHARS))}
-          />
-          <Text style={styles.counter}>{message.length}/{MAX_CHARS}</Text>
+          <Text style={styles.hero} numberOfLines={1} adjustsFontSizeToFit>
+            Say it <Text style={{ color: active.a }}>{active.word}</Text>.
+          </Text>
 
-          <Text style={styles.label}>Pick a tone</Text>
-          <View style={styles.grid}>
-            {TONES.map((tone) => {
-              const locked = !tone.free && !isPro;
-              const active = activeTone === tone.id;
-              return (
-                <TouchableOpacity
-                  key={tone.id}
-                  style={[styles.tone, active && styles.toneActive, locked && styles.toneLocked]}
-                  onPress={() => retone(tone)}
-                  disabled={loading}
-                >
-                  <Text style={styles.toneEmoji}>{tone.emoji}</Text>
-                  <Text style={[styles.toneText, locked && styles.toneTextLocked]}>
-                    {tone.label}
-                  </Text>
-                  {locked && <Text style={styles.lock}>🔒</Text>}
-                </TouchableOpacity>
-              );
-            })}
+          {/* conversation */}
+          <ScrollView
+            ref={threadRef}
+            style={styles.thread}
+            contentContainerStyle={styles.threadContent}
+            onContentSizeChange={scrollToEnd}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {!original && !loading ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>Type what you want to say,</Text>
+                <Text style={styles.emptyTitle}>then tap a tone.</Text>
+                <Text style={styles.emptySub}>Your rewrite shows up here, ready to copy.</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.chip}>{active.emoji}  {active.label.toUpperCase()}</Text>
+                <View style={styles.origBubble}>
+                  <Text style={styles.origText}>{original}</Text>
+                </View>
+                {loading ? (
+                  <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.typing}>
+                    <TypingDots />
+                  </LinearGradient>
+                ) : result ? (
+                  <>
+                    <Animated.View style={{ alignSelf: 'flex-end', maxWidth: '86%', transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: pop }}>
+                      <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.outBubble}>
+                        <Text style={styles.outText} selectable>{result}</Text>
+                      </LinearGradient>
+                    </Animated.View>
+                    <View style={styles.actions}>
+                      <Text style={styles.status}>Ready to send</Text>
+                      <TouchableOpacity onPress={onCopy} style={[styles.copy, copied && styles.copyDone]}>
+                        <Text style={styles.copyText}>{copied ? 'COPIED ✓' : 'COPY'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {confirming && (
+                      <View style={styles.confirm}>
+                        <Text style={styles.confirmText}><Text style={{ fontFamily: F.bold }}>You sure? 🔥</Text> This one might start a fire.</Text>
+                        <View style={styles.confirmRow}>
+                          <TouchableOpacity style={styles.confirmBtn} onPress={() => setConfirming(false)}>
+                            <Text style={styles.confirmBtnText}>Cool off</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={[styles.confirmBtn, styles.danger]} onPress={doCopy}>
+                            <Text style={[styles.confirmBtnText, { color: INK }]}>Copy it</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </>
+                ) : null}
+              </>
+            )}
+            {!!error && <Text style={styles.error}>{error}</Text>}
+          </ScrollView>
+
+          {/* tone strip */}
+          <View style={styles.stripHead}>
+            <Text style={styles.stripLabel}>TAP A TONE</Text>
+            <Text style={styles.stripLabel}>SWIPE →</Text>
           </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.strip}
+            contentContainerStyle={styles.stripContent}
+            keyboardShouldPersistTaps="always"
+          >
+            {COLUMNS.map((col, ci) => (
+              <View key={ci} style={styles.col}>
+                {col.map((t) => (
+                  <ToneTile key={t.id} tone={t} active={t.id === active.id}
+                    locked={!t.free && !isPro} showFree={t.free && !isPro}
+                    disabled={loading} onPress={() => retone(t)} />
+                ))}
+              </View>
+            ))}
+          </ScrollView>
 
-          {(loading || result) ? (
-            <View style={styles.resultCard}>
-              <Text style={styles.resultLabel}>{activeLabel ? `${activeLabel} version` : 'Result'}</Text>
-              {loading ? (
-                <ActivityIndicator color={ACCENT} style={{ marginVertical: 24 }} />
-              ) : (
-                <>
-                  <Text style={styles.resultText} selectable>{result}</Text>
-                  <TouchableOpacity style={[styles.copyBtn, copied && styles.copyBtnDone]} onPress={copy}>
-                    <Text style={styles.copyText}>{copied ? 'Copied ✓' : 'Copy to clipboard'}</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          ) : null}
-
-          {!isPro && (
-            <TouchableOpacity onPress={restore} style={styles.restore}>
-              <Text style={styles.restoreText}>Restore purchases</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          {/* composer */}
+          <View style={styles.composer}>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholder="Type it how you feel it…"
+              placeholderTextColor={MUTED}
+              value={message}
+              onChangeText={(t) => { setMessage(t.slice(0, MAX_CHARS)); if (error) setError(''); }}
+              selectionColor={active.a}
+            />
+            {!!message && (
+              <Pressable onPress={() => setMessage('')} style={styles.clear} hitSlop={8}>
+                <Text style={styles.clearText}>✕</Text>
+              </Pressable>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-const BG = '#12151f';
-const CARD = '#1d2130';
-const ACCENT = '#ffd23f';
-const BUBBLE = '#2f7bf6';
+function ToneTile({ tone, active, locked, showFree, disabled, onPress }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const pressIn = () => Animated.timing(scale, { toValue: 0.94, duration: 90, useNativeDriver: true }).start();
+  const pressOut = () => Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+  const inner = (
+    <>
+      <Text style={[styles.tileEmoji, locked && { opacity: 0.5 }]}>{tone.emoji}</Text>
+      <Text style={[styles.tileName, active && { color: INK }, locked && { color: MUTED }]} numberOfLines={1}>{tone.label}</Text>
+      {showFree && <View style={[styles.tag, styles.tagFree]}><Text style={styles.tagFreeText}>FREE</Text></View>}
+      {locked && <View style={[styles.tag, styles.tagLock]}><Text style={styles.tagLockText}>PRO</Text></View>}
+    </>
+  );
+  return (
+    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={disabled}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {active ? (
+          <LinearGradient colors={[tone.a, tone.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, styles.tileActive]}>
+            {inner}
+          </LinearGradient>
+        ) : (
+          <View style={styles.tile}>{inner}</View>
+        )}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function TypingDots() {
+  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+  useEffect(() => {
+    const anims = dots.map((d, i) => Animated.loop(Animated.sequence([
+      Animated.delay(i * 150),
+      Animated.timing(d, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(d, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.delay(300 - i * 150),
+    ])));
+    anims.forEach((a) => a.start());
+    return () => anims.forEach((a) => a.stop());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <View style={{ flexDirection: 'row', gap: 5 }}>
+      {dots.map((d, i) => (
+        <Animated.View key={i} style={[styles.dot, {
+          opacity: d.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.9] }),
+          transform: [{ translateY: d.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }],
+        }]} />
+      ))}
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
-  container: { padding: 20, paddingBottom: 48 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  logo: { color: '#fff', fontSize: 32, fontWeight: '800', letterSpacing: -1 },
-  proPill: { backgroundColor: ACCENT, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
-  proPillText: { color: BG, fontWeight: '700' },
-  label: { color: '#a0a0ad', fontSize: 14, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
-  input: {
-    backgroundColor: CARD, color: '#fff', borderRadius: 16, padding: 16,
-    fontSize: 17, minHeight: 130, textAlignVertical: 'top',
+  app: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 12 },
+
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logo: { fontFamily: F.black, fontSize: 22, color: TEXT, letterSpacing: -0.8 },
+  pill: { backgroundColor: TEXT, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  pillText: { fontFamily: F.bold, fontSize: 13, color: INK },
+  pillPro: { backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE },
+  pillProText: { fontFamily: F.bold, fontSize: 13, color: TEXT },
+  hero: { fontFamily: F.display, fontSize: 30, color: TEXT, letterSpacing: -1 },
+
+  thread: { flex: 1 },
+  threadContent: { flexGrow: 1, justifyContent: 'flex-end', gap: 8, paddingVertical: 4 },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  emptyTitle: { fontFamily: F.medium, fontSize: 17, color: TEXT, textAlign: 'center' },
+  emptySub: { fontFamily: F.body, fontSize: 14, color: MUTED, textAlign: 'center', marginTop: 8 },
+  chip: { alignSelf: 'center', fontFamily: F.bold, fontSize: 11, letterSpacing: 1.5, color: MUTED },
+  origBubble: {
+    alignSelf: 'flex-end', maxWidth: '86%', backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderTopLeftRadius: 22, borderTopRightRadius: 22, borderBottomLeftRadius: 22, borderBottomRightRadius: 6,
   },
-  counter: { color: '#5c5c68', fontSize: 12, alignSelf: 'flex-end', marginTop: 6, marginBottom: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-  tone: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: CARD,
-    paddingHorizontal: 14, paddingVertical: 11, borderRadius: 999,
-    borderWidth: 1.5, borderColor: CARD,
+  origText: { fontFamily: F.body, fontSize: 14, lineHeight: 20, color: MUTED, textDecorationLine: 'line-through' },
+  outBubble: {
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderTopLeftRadius: 22, borderTopRightRadius: 22, borderBottomLeftRadius: 22, borderBottomRightRadius: 6,
   },
-  toneActive: { borderColor: ACCENT },
-  toneLocked: { opacity: 0.55 },
-  toneEmoji: { fontSize: 16, marginRight: 6 },
-  toneText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  toneTextLocked: { color: '#c9c9d3' },
-  lock: { fontSize: 11, marginLeft: 6 },
-  resultCard: { backgroundColor: CARD, borderRadius: 16, padding: 18 },
-  resultLabel: { color: ACCENT, fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
-  resultText: {
-    alignSelf: 'flex-end', maxWidth: '88%', backgroundColor: BUBBLE, color: '#fff',
-    fontSize: 17, lineHeight: 24, paddingHorizontal: 14, paddingVertical: 10,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20, borderBottomLeftRadius: 20, borderBottomRightRadius: 6,
-    overflow: 'hidden',
+  outText: { fontFamily: F.medium, fontSize: 16, lineHeight: 22, color: INK },
+  typing: { alignSelf: 'flex-end', borderRadius: 22, paddingHorizontal: 16, paddingVertical: 14 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: INK },
+  actions: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 10 },
+  status: { fontFamily: F.body, fontSize: 11, color: MUTED },
+  copy: { backgroundColor: TEXT, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
+  copyDone: { backgroundColor: '#7df0a4' },
+  copyText: { fontFamily: F.display, fontSize: 12, letterSpacing: 0.6, color: INK },
+  confirm: { backgroundColor: 'rgba(255,80,40,0.14)', borderWidth: 1, borderColor: 'rgba(255,110,70,0.6)', borderRadius: 18, padding: 12, gap: 10 },
+  confirmText: { fontFamily: F.body, fontSize: 14, color: TEXT },
+  confirmRow: { flexDirection: 'row', gap: 8 },
+  confirmBtn: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: EDGE, backgroundColor: GLASS },
+  confirmBtnText: { fontFamily: F.bold, fontSize: 14, color: TEXT },
+  danger: { backgroundColor: '#ff5a36', borderColor: '#ff5a36' },
+  error: { alignSelf: 'center', textAlign: 'center', fontFamily: F.body, fontSize: 13, color: '#ffb4a3' },
+
+  stripHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: -4 },
+  stripLabel: { fontFamily: F.bold, fontSize: 11, letterSpacing: 1.6, color: MUTED },
+  strip: { flexGrow: 0, marginHorizontal: -16 },
+  stripContent: { paddingHorizontal: 16, gap: 8 },
+  col: { gap: 8 },
+  tile: {
+    width: 96, height: 58, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8,
+    justifyContent: 'space-between', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE,
   },
-  copyBtn: { marginTop: 18, backgroundColor: ACCENT, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  copyBtnDone: { backgroundColor: '#7ddc8a' },
-  copyText: { color: BG, fontSize: 16, fontWeight: '800' },
-  restore: { alignItems: 'center', marginTop: 28 },
-  restoreText: { color: '#5c5c68', fontSize: 13, textDecorationLine: 'underline' },
+  tileActive: { borderColor: 'transparent' },
+  tileEmoji: { fontSize: 20, lineHeight: 24 },
+  tileName: { fontFamily: F.bold, fontSize: 12.5, color: TEXT },
+  tag: { position: 'absolute', top: 7, right: 7, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
+  tagFree: { backgroundColor: TEXT },
+  tagFreeText: { fontFamily: F.bold, fontSize: 8, letterSpacing: 0.8, color: INK },
+  tagLock: { backgroundColor: 'rgba(0,0,0,0.35)' },
+  tagLockText: { fontFamily: F.bold, fontSize: 8, letterSpacing: 0.8, color: MUTED },
+
+  composer: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE, borderRadius: 24,
+    paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
+  },
+  input: { flex: 1, maxHeight: 96, minHeight: 34, fontFamily: F.body, fontSize: 16, color: TEXT, paddingTop: 7, paddingBottom: 7 },
+  clear: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  clearText: { color: MUTED, fontSize: 15 },
 });
