@@ -207,7 +207,7 @@ function Main() {
           </View>
 
           <Text style={styles.hero} numberOfLines={1} adjustsFontSizeToFit>
-            Say it <Text style={{ color: active.a }}>{active.word}</Text>.
+            Say {active.noIt ? '' : 'it '}<Text style={{ color: active.a }}>{active.word}</Text>.
           </Text>
 
           {/* conversation */}
