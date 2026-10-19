@@ -3,26 +3,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
-/* Layout: one phone-width column. The whole screen takes on the colour of the chosen tone ("mood light"). */
+/* Layout: one screen, no page scroll, like a texting app.
+   header → conversation (flexes, scrolls inside itself) → swipeable tone strip → message box at the bottom.
+   The whole screen takes on the colour of the chosen tone ("mood light"). */
 :root {
   --void: #07070c;
   --glass: rgba(255,255,255,.06);
-  --glass-hi: rgba(255,255,255,.12);
   --edge: rgba(255,255,255,.14);
   --text: #f6f4ff;
   --muted: rgba(246,244,255,.62);
-  --mood-a: #3fc8ff;   /* set per tone by script */
+  --mood-a: #3fc8ff;
   --mood-b: #6f6bff;
   --display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: dark;
 }
-html, body { background: var(--void); color: var(--text); }
-body { font-family: var(--body); font-size: 16px; min-height: 100vh; overflow-x: hidden; }
+html { height: 100%; box-sizing: border-box; background: var(--void); }
+body { height: 100%; overflow: hidden; background: var(--void); color: var(--text); font-family: var(--body); font-size: 16px; }
 
-/* mood light */
 .aura { position: fixed; inset: -20%; z-index: 0; pointer-events: none; filter: blur(60px); opacity: .9; }
-.aura i { position: absolute; border-radius: 50%; transition: background 1.1s ease; }
+.aura i { position: absolute; border-radius: 50%; }
 .aura i:nth-child(1) { width: 70vmax; height: 70vmax; left: -15%; top: -25%; background: radial-gradient(circle, var(--mood-a), transparent 62%); animation: drift1 16s ease-in-out infinite alternate; }
 .aura i:nth-child(2) { width: 60vmax; height: 60vmax; right: -20%; top: 30%; background: radial-gradient(circle, var(--mood-b), transparent 60%); animation: drift2 19s ease-in-out infinite alternate; }
 .aura i:nth-child(3) { width: 40vmax; height: 40vmax; left: 20%; bottom: -15%; background: radial-gradient(circle, var(--mood-a), transparent 60%); opacity: .5; animation: drift1 23s ease-in-out infinite alternate-reverse; }
@@ -31,67 +31,30 @@ body { font-family: var(--body); font-size: 16px; min-height: 100vh; overflow-x:
 .grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
-.wrap {
-  position: relative; z-index: 2;
+.app {
+  position: relative; z-index: 2; height: 100%; box-sizing: border-box;
   max-width: 440px; margin: 0 auto;
-  padding-block: 18px 56px;
+  padding-block: 12px 12px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: flex; flex-direction: column; gap: 22px;
+  display: flex; flex-direction: column; gap: 12px;
 }
-.banner { font-size: 12px; color: var(--muted); text-align: center; letter-spacing: .3px; }
 
-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.logo { font-family: var(--display); font-weight: 900; font-size: 30px; letter-spacing: -1px; margin: 0; line-height: 1; text-transform: uppercase; }
-.logo b { font-weight: 900; color: transparent; background: linear-gradient(100deg, var(--mood-a), var(--mood-b)); -webkit-background-clip: text; background-clip: text; transition: --mood-a 1s; }
-.pill {
-  font: 700 13px var(--body); color: var(--void); background: var(--text);
-  border: 0; border-radius: 999px; padding: 10px 15px; cursor: pointer; letter-spacing: .3px;
-}
+/* header */
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
+.logo { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.8px; margin: 0; line-height: 1; text-transform: uppercase; }
+.grad { color: transparent; background: linear-gradient(100deg, var(--mood-a), var(--mood-b)); -webkit-background-clip: text; background-clip: text; }
+.pill { font: 700 13px var(--body); color: var(--void); background: var(--text); border: 0; border-radius: 999px; padding: 8px 13px; cursor: pointer; }
 .pill.pro { background: var(--glass); color: var(--text); border: 1px solid var(--edge); cursor: default; }
+.hero { flex: none; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 7.4vw, 32px); line-height: 1.05; letter-spacing: -1px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.hero { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 8vw, 34px); line-height: 1.05; letter-spacing: -1px; margin: 4px 0 0; text-wrap: balance; }
-.hero em { font-style: normal; color: transparent; background: linear-gradient(100deg, var(--mood-a), var(--mood-b)); -webkit-background-clip: text; background-clip: text; }
-
-.panel { background: var(--glass); border: 1px solid var(--edge); border-radius: 24px; padding: 14px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-.label { font-size: 11px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; }
-textarea {
-  width: 100%; box-sizing: border-box; min-height: 104px; resize: vertical;
-  background: transparent; color: var(--text); border: 0; padding: 2px 2px; font: 18px/1.45 var(--body);
-}
-textarea:focus { outline: none; }
-.panel:focus-within { border-color: color-mix(in srgb, var(--mood-a) 70%, white); }
-button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
-.count { font-variant-numeric: tabular-nums; letter-spacing: 0; }
-
-.tones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
-.tone {
-  position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 14px;
-  min-height: 88px; padding: 12px; text-align: left;
-  background: var(--glass); color: var(--text); border: 1px solid var(--edge); border-radius: 18px;
-  font: 700 14px var(--body); cursor: pointer; overflow: hidden;
-  transition: transform .15s ease, background .3s ease, border-color .3s ease;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-}
-.tone::before { content: ""; position: absolute; inset: 0; background: linear-gradient(140deg, var(--a), var(--b)); opacity: 0; transition: opacity .3s ease; }
-.tone > * { position: relative; }
-.tone .em { font-size: 26px; line-height: 1; }
-.tone:hover { border-color: rgba(255,255,255,.3); }
-.tone:active { transform: scale(.95); }
-.tone.active { border-color: transparent; color: #0b0b12; box-shadow: 0 10px 30px -10px var(--a); }
-.tone.active::before { opacity: 1; }
-.tone.locked .em { filter: grayscale(.85); opacity: .55; }
-.tone.locked .name { color: var(--muted); }
-.tag { position: absolute; top: 9px; right: 9px; font-size: 9px; font-weight: 800; letter-spacing: 1px; border-radius: 6px; padding: 3px 6px; }
-.tag.free { background: var(--text); color: var(--void); }
-.tag.lock { background: rgba(0,0,0,.35); color: var(--muted); }
-.tone[disabled] { cursor: wait; }
-
-.result { display: flex; flex-direction: column; gap: 12px; }
-.thread { display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+/* conversation */
+.thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; scrollbar-width: none; }
+.thread::-webkit-scrollbar { display: none; }
+.spacer { flex: 1; }
 .chip { align-self: center; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-.bubble { max-width: 86%; border-radius: 22px; padding: 11px 15px; font-size: 16.5px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
-.bubble.orig { align-self: flex-end; background: rgba(255,255,255,.08); color: var(--muted); font-size: 14.5px; border-radius: 22px 22px 6px 22px; text-decoration: line-through; text-decoration-color: rgba(255,255,255,.35); }
+.bubble { max-width: 86%; border-radius: 22px; padding: 10px 14px; font-size: 16px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.bubble.orig { align-self: flex-end; background: rgba(255,255,255,.08); color: var(--muted); font-size: 14px; border-radius: 22px 22px 6px 22px; text-decoration: line-through; text-decoration-color: rgba(255,255,255,.35); }
 .bubble.out {
   align-self: flex-end; color: #0b0b12; font-weight: 500; border-radius: 22px 22px 6px 22px;
   background: linear-gradient(140deg, var(--mood-a), var(--mood-b));
@@ -99,86 +62,110 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   animation: pop .35s cubic-bezier(.2,1.4,.4,1);
 }
 @keyframes pop { from { transform: translateY(8px) scale(.94); opacity: 0; } }
-.delivered { align-self: flex-end; font-size: 11px; color: var(--muted); margin-right: 4px; }
+.actions { align-self: flex-end; display: flex; align-items: center; gap: 10px; }
+.status { font-size: 11px; color: var(--muted); }
+.copy { border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer; font: 800 12px var(--display); letter-spacing: .6px; text-transform: uppercase; background: var(--text); color: var(--void); transition: transform .12s ease; }
+.copy:active { transform: scale(.96); }
+.copy.done { background: #7df0a4; }
+.copy[disabled] { opacity: .45; }
 .typing { align-self: flex-end; background: linear-gradient(140deg, var(--mood-a), var(--mood-b)); border-radius: 22px; padding: 14px 16px; display: flex; gap: 5px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: #0b0b12; opacity: .35; animation: blink 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
 @keyframes blink { 50% { opacity: .9; transform: translateY(-2px); } }
-
-.copy {
-  width: 100%; border: 0; border-radius: 18px; padding: 17px; cursor: pointer;
-  font: 800 15px var(--display); letter-spacing: .5px; text-transform: uppercase;
-  background: var(--text); color: var(--void); transition: transform .12s ease;
-}
-.copy:active { transform: scale(.98); }
-.copy.done { background: #7df0a4; }
-.copy[disabled] { opacity: .5; }
-.err { color: #ffb4a3; font-size: 14px; }
-.restore { background: none; border: 0; color: var(--muted); font: 13px var(--body); text-decoration: underline; cursor: pointer; align-self: center; }
-
-.confirm { background: rgba(255,80,40,.14); border: 1px solid rgba(255,110,70,.6); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.confirm { align-self: stretch; background: rgba(255,80,40,.14); border: 1px solid rgba(255,110,70,.6); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 .confirm p { margin: 0; }
-.row { display: flex; gap: 10px; }
-.row button { flex: 1; border-radius: 14px; padding: 12px; font: 700 15px var(--body); cursor: pointer; border: 1px solid var(--edge); background: var(--glass); color: var(--text); }
+.row { display: flex; gap: 8px; }
+.row button { flex: 1; border-radius: 12px; padding: 10px; font: 700 14px var(--body); cursor: pointer; border: 1px solid var(--edge); background: var(--glass); color: var(--text); }
 .row .danger { background: #ff5a36; border-color: #ff5a36; color: #0b0b12; }
+.err { align-self: center; text-align: center; color: #ffb4a3; font-size: 13px; }
+
+/* tone strip */
+.strip-head { flex: none; display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-bottom: -4px; }
+.tones {
+  flex: none; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 58px); grid-auto-columns: 96px; gap: 8px;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
+}
+.tones::-webkit-scrollbar { display: none; }
+.tone {
+  position: relative; scroll-snap-align: start;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+  padding: 8px 10px; text-align: left;
+  background: var(--glass); color: var(--text); border: 1px solid var(--edge); border-radius: 16px;
+  font: 700 12.5px var(--body); cursor: pointer; overflow: hidden; white-space: nowrap;
+  transition: transform .15s ease, border-color .3s ease;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.tone::before { content: ""; position: absolute; inset: 0; background: linear-gradient(140deg, var(--a), var(--b)); opacity: 0; transition: opacity .3s ease; }
+.tone > * { position: relative; }
+.tone .em { font-size: 20px; line-height: 1; }
+.tone:active { transform: scale(.95); }
+.tone.active { border-color: transparent; color: #0b0b12; box-shadow: 0 8px 24px -10px var(--a); }
+.tone.active::before { opacity: 1; }
+.tone.locked .em { filter: grayscale(.85); opacity: .55; }
+.tone.locked .name { color: var(--muted); }
+.tag { position: absolute; top: 7px; right: 7px; font-size: 8px; font-weight: 800; letter-spacing: .8px; border-radius: 5px; padding: 2px 5px; }
+.tag.free { background: var(--text); color: var(--void); }
+.tag.lock { background: rgba(0,0,0,.35); color: var(--muted); }
+.tone[disabled] { cursor: wait; }
+
+/* composer */
+.composer { flex: none; display: flex; align-items: flex-end; gap: 8px; background: var(--glass); border: 1px solid var(--edge); border-radius: 24px; padding: 8px 8px 8px 16px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.composer:focus-within { border-color: color-mix(in srgb, var(--mood-a) 70%, white); }
+textarea { flex: 1; min-width: 0; resize: none; max-height: 96px; background: transparent; color: var(--text); border: 0; padding: 6px 0; font: 16px/1.4 var(--body); }
+textarea:focus { outline: none; }
+textarea::placeholder { color: var(--muted); }
+.clear { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: var(--muted); font-size: 16px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 /* paywall */
 .scrim { position: fixed; inset: 0; background: rgba(3,3,8,.72); z-index: 20; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
-  max-width: 440px; margin: 0 auto; overflow: hidden;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-width: 440px; margin: 0 auto; overflow: hidden;
   background: #101018; border: 1px solid var(--edge); border-bottom: 0; border-radius: 30px 30px 0 0;
-  padding-block: 26px calc(22px + env(safe-area-inset-bottom, 0px));
-  padding-left: max(22px, env(safe-area-inset-left, 0px));
-  padding-right: max(22px, env(safe-area-inset-right, 0px));
-  display: flex; flex-direction: column; gap: 16px;
-  animation: up .3s cubic-bezier(.2,1.2,.4,1);
+  padding-block: 24px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px; animation: up .3s cubic-bezier(.2,1.2,.4,1);
 }
 .sheet::before { content: ""; position: absolute; inset: -40% -20% auto; height: 260px; background: conic-gradient(from 90deg, #ff4d6d, #ffb347, #3fc8ff, #9b6bff, #ff4d6d); filter: blur(70px); opacity: .45; animation: spin 10s linear infinite; }
 .sheet > * { position: relative; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes up { from { transform: translateY(60px); } }
-.sheet h2 { font-family: var(--display); font-weight: 900; font-size: 30px; line-height: 1.02; letter-spacing: -1px; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.sheet h2 { font-family: var(--display); font-weight: 900; font-size: 28px; line-height: 1.02; letter-spacing: -1px; margin: 0; text-transform: uppercase; }
 .sheet p { margin: 0; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chips span { font-size: 13px; background: rgba(255,255,255,.07); border: 1px solid var(--edge); border-radius: 999px; padding: 6px 10px; }
-.price { font-family: var(--display); font-weight: 800; font-size: 24px; }
-.price small { font-family: var(--body); font-weight: 500; font-size: 13px; color: var(--muted); }
-.close { background: none; border: 0; color: var(--muted); font: 14px var(--body); cursor: pointer; }
+.chips span { font-size: 12.5px; background: rgba(255,255,255,.07); border: 1px solid var(--edge); border-radius: 999px; padding: 5px 9px; }
+.price { font-family: var(--display); font-weight: 800; font-size: 22px; }
+.price small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); }
+.buy { width: 100%; border: 0; border-radius: 18px; padding: 16px; cursor: pointer; font: 800 15px var(--display); letter-spacing: .5px; text-transform: uppercase; background: var(--text); color: var(--void); }
+.sheet-links { display: flex; justify-content: space-between; }
+.link { background: none; border: 0; color: var(--muted); font: 13px var(--body); cursor: pointer; padding: 4px 0; }
 
-@media (max-width: 360px) { .tones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 </style>
 
 <div class="aura" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="grain" aria-hidden="true"></div>
 
-<div class="wrap">
-  <div class="banner">App preview · rewrites are real · paywall is pretend</div>
-
+<main class="app">
   <header>
-    <h1 class="logo">Re<b>tone</b></h1>
+    <h1 class="logo">Re<span class="grad">tone</span></h1>
     <button class="pill" id="unlockBtn" type="button">Unlock all</button>
   </header>
 
-  <p class="hero">Say it <em id="heroWord">calmer</em>.</p>
+  <p class="hero">Say it <span class="grad" id="heroWord">calmer</span>.</p>
 
-  <section class="panel">
-    <p class="label"><label for="msg">Your message</label><span class="count" id="count">0/1000</span></p>
-    <textarea id="msg" maxlength="1000">ok whatever. you said you'd be home by 6 and it's 8. dinner's cold. do what you want</textarea>
-  </section>
-
-  <section>
-    <p class="label">Pick a tone</p>
-    <div class="tones" id="tones"></div>
-  </section>
-
-  <section class="result">
-    <div class="thread" id="thread">
-      <div class="chip" id="chip">Example · Calmer</div>
-      <div class="bubble orig" id="origBubble"></div>
-      <div class="bubble out" id="outBubble">Hey, I was expecting you at 6 and it's 8 now. Dinner's gone cold and I'm a bit frustrated. Can we talk about it when you're home?</div>
-      <div class="delivered" id="delivered">Ready to send</div>
+  <section class="thread" id="thread" aria-live="polite">
+    <div class="spacer"></div>
+    <div class="chip" id="chip">Example · 🧊 Calmer</div>
+    <div class="bubble orig" id="origBubble"></div>
+    <div class="bubble out" id="outBubble">Hey, I was expecting you at 6 and it's 8 now. Dinner's gone cold and I'm a bit frustrated. Can we talk about it when you're home?</div>
+    <div class="actions" id="actions">
+      <span class="status">Ready to send</span>
+      <button class="copy" id="copyBtn" type="button">Copy</button>
     </div>
     <div class="confirm" id="confirm" hidden>
       <p><strong>You sure? 🔥</strong> This one might start a fire.</p>
@@ -187,38 +174,47 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
         <button type="button" class="danger" id="copyAnyway">Copy it</button>
       </div>
     </div>
-    <button class="copy" id="copyBtn" type="button">Copy to clipboard</button>
     <div class="err" id="err" hidden></div>
   </section>
 
-  <button class="restore" id="restoreBtn" type="button">Restore purchases</button>
-</div>
+  <div class="strip-head"><span>Tap a tone</span><span>Swipe →</span></div>
+  <div class="tones" id="tones"></div>
+
+  <div class="composer">
+    <label for="msg" hidden>Your message</label>
+    <textarea id="msg" rows="1" maxlength="1000" placeholder="Type it how you feel it…">ok whatever. you said you'd be home by 6 and it's 8. dinner's cold. do what you want</textarea>
+    <button class="clear" id="clearBtn" type="button" aria-label="Clear message">✕</button>
+  </div>
+</main>
 
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="pwTitle" hidden>
   <h2 id="pwTitle">Every tone.<br>Forever.</h2>
   <p>Say it exactly how you mean it.</p>
   <div class="chips" id="pwChips"></div>
-  <div class="price">$4.99 <small>one-time · example price</small></div>
-  <button class="copy" id="buyBtn" type="button">Unlock all tones</button>
-  <button class="close" id="closeSheet" type="button">Not now</button>
+  <div class="price">$4.99 <small>one-time · preview, nothing is charged</small></div>
+  <button class="buy" id="buyBtn" type="button">Unlock all tones</button>
+  <div class="sheet-links">
+    <button class="link" id="closeSheet" type="button">Not now</button>
+    <button class="link" id="restoreBtn" type="button">Restore purchases</button>
+  </div>
 </div>
 
 <script>
 const TONES = [
   { id: 'calmer', label: 'Calmer', word: 'calmer', emoji: '🧊', free: true, a: '#3fc8ff', b: '#6f6bff', prompt: 'Rewrite it to sound calm and level-headed. Remove anger, blame and harsh words, but keep the actual point.' },
-  { id: 'professional', label: 'Professional', word: 'professionally', emoji: '💼', free: true, a: '#9fb4d9', b: '#4d6bff', prompt: 'Rewrite it to sound polished and professional, like a message to a boss, client or coworker.' },
+  { id: 'professional', label: 'Professional', word: 'pro', emoji: '💼', free: true, a: '#9fb4d9', b: '#4d6bff', prompt: 'Rewrite it to sound polished and professional, like a message to a boss, client or coworker.' },
   { id: 'kinder', label: 'Kinder', word: 'kinder', emoji: '💛', a: '#ffd84d', b: '#ff9f43', prompt: 'Rewrite it to sound warm, caring and kind, without being fake or over the top.' },
   { id: 'firmer', label: 'Firmer', word: 'firmer', emoji: '🪨', a: '#c9c3b6', b: '#7d7aa8', prompt: 'Rewrite it to sound firm and clear, setting a boundary respectfully. No apologising for the point itself.' },
   { id: 'apologetic', label: 'Apologetic', word: 'sorry', emoji: '🙏', a: '#b8a4ff', b: '#7fd1ff', prompt: 'Rewrite it as a sincere apology that takes responsibility without grovelling.' },
   { id: 'funnier', label: 'Funnier', word: 'funnier', emoji: '😂', a: '#b6ff4d', b: '#25d9c5', prompt: 'Rewrite it to be funny and lighthearted while still getting the point across.' },
-  { id: 'confident', label: 'Confident', word: 'confidently', emoji: '😎', a: '#ffb347', b: '#ff4d8b', prompt: 'Rewrite it to sound confident and self-assured. Remove hedging like "sorry", "just", "maybe".' },
+  { id: 'confident', label: 'Confident', word: 'bolder', emoji: '😎', a: '#ffb347', b: '#ff4d8b', prompt: 'Rewrite it to sound confident and self-assured. Remove hedging like "sorry", "just", "maybe".' },
   { id: 'shorter', label: 'Shorter', word: 'shorter', emoji: '✂️', a: '#e8e8f0', b: '#8f8fa8', prompt: 'Rewrite it as short as possible while keeping the meaning. Text-message length.' },
   { id: 'flirty', label: 'Flirty', word: 'flirtier', emoji: '😏', a: '#ff7ac6', b: '#b56bff', prompt: 'Rewrite it to be playful and flirty, like texting someone you have a crush on. Keep it charming, not crude.' },
   { id: 'spicy', label: 'Spicy', word: 'spicier', emoji: '🌶️', a: '#ff3d6e', b: '#a3195b', prompt: 'Rewrite it to be suggestive and steamy for a romantic partner, using innuendo and teasing. Keep it tasteful: no explicit sexual descriptions.' },
   { id: 'angrier', label: 'Fired Up', word: 'louder', emoji: '🔥', confirm: true, a: '#ff5a1f', b: '#ff1f3d', prompt: 'Rewrite it to sound noticeably more frustrated and fired up, so the reader knows the sender is upset. No slurs, threats or personal attacks on appearance or identity.' },
-  { id: 'passive', label: 'Passive-Aggro', word: 'sweeter 🙂', emoji: '🙂', a: '#ffe066', b: '#ff6b9d', prompt: 'Rewrite it in an over-the-top passive-aggressive tone, sweet on the surface with obvious shade underneath. Play it for laughs.' },
-  { id: 'pirate', label: 'Pirate', word: 'like a pirate', emoji: '🏴‍☠️', a: '#2bd4a8', b: '#1b6f8f', prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.' },
+  { id: 'passive', label: 'Passive-Aggro', word: 'sweeter', emoji: '🙂', a: '#ffe066', b: '#ff6b9d', prompt: 'Rewrite it in an over-the-top passive-aggressive tone, sweet on the surface with obvious shade underneath. Play it for laughs.' },
+  { id: 'pirate', label: 'Pirate', word: 'pirate', emoji: '🏴‍☠️', a: '#2bd4a8', b: '#1b6f8f', prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.' },
 ];
 const SYSTEM = 'You rewrite text messages in a requested tone. Keep the original meaning, facts and intent. Do not add new information or promises. Write it as the sender, in first person, ready to paste into a text. Match the casualness of a text message unless the tone says otherwise. Return ONLY the rewritten message. No quotes, no explanations, no options. If the message asks for something harmful (threats, harassment, illegal acts), reply exactly: Sorry, I can\'t rewrite that one.';
 
@@ -252,10 +248,10 @@ function renderTones() {
   }
   $('unlockBtn').textContent = isPro ? 'Pro ✓' : 'Unlock all';
   $('unlockBtn').classList.toggle('pro', isPro);
-  $('restoreBtn').hidden = isPro;
 }
 
-function count() { $('count').textContent = `${$('msg').value.length}/1000`; }
+function grow() { const t = $('msg'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 96) + 'px'; }
+function toBottom() { const th = $('thread'); th.scrollTop = th.scrollHeight; }
 
 function openSheet(tone) {
   pendingTone = tone || null;
@@ -272,15 +268,14 @@ async function pick(tone) {
   if (!tone.free && !isPro) { openSheet(tone); return; }
   const message = $('msg').value.trim();
   $('err').hidden = true; $('confirm').hidden = true;
-  if (!message) { showErr('Type a message first.'); return; }
+  if (!message) { showErr('Type a message first.'); $('msg').focus(); return; }
 
   active = tone.id; busy = true; setMood(tone); renderTones();
   $('origBubble').textContent = message;
-  $('outBubble').hidden = true; $('delivered').hidden = true;
+  $('outBubble').hidden = true; $('actions').hidden = true;
   $('chip').textContent = `${tone.emoji} ${tone.label}`;
   const typing = document.createElement('div'); typing.className = 'typing'; typing.innerHTML = '<i></i><i></i><i></i>';
-  $('thread').insertBefore(typing, $('outBubble'));
-  $('copyBtn').disabled = true;
+  $('thread').insertBefore(typing, $('outBubble')); toBottom();
 
   const sample = await getSample();
   try {
@@ -296,12 +291,12 @@ async function pick(tone) {
   } finally {
     typing.remove();
     const out = $('outBubble'); out.hidden = false; out.style.animation = 'none'; void out.offsetWidth; out.style.animation = '';
-    $('delivered').hidden = false; $('copyBtn').disabled = false;
-    busy = false; renderTones();
+    $('actions').hidden = false;
+    busy = false; renderTones(); toBottom();
   }
 }
 
-function showErr(t) { $('err').textContent = t; $('err').hidden = false; }
+function showErr(t) { $('err').textContent = t; $('err').hidden = false; toBottom(); }
 
 async function doCopy() {
   const text = $('outBubble').textContent;
@@ -314,27 +309,28 @@ async function doCopy() {
     return;
   }
   $('copyBtn').textContent = 'Copied ✓'; $('copyBtn').classList.add('done');
-  setTimeout(() => { $('copyBtn').textContent = 'Copy to clipboard'; $('copyBtn').classList.remove('done'); }, 1800);
+  setTimeout(() => { $('copyBtn').textContent = 'Copy'; $('copyBtn').classList.remove('done'); }, 1800);
 }
 
 $('copyBtn').addEventListener('click', () => {
   const t = TONES.find((x) => x.id === active);
-  if (t?.confirm) { $('confirm').hidden = false; return; }
+  if (t?.confirm) { $('confirm').hidden = false; toBottom(); return; }
   doCopy();
 });
 $('copyAnyway').addEventListener('click', doCopy);
 $('coolOff').addEventListener('click', () => { $('confirm').hidden = true; });
 $('unlockBtn').addEventListener('click', () => { if (!isPro) openSheet(); });
-$('restoreBtn').addEventListener('click', () => showErr('Preview: no earlier purchase found.'));
+$('restoreBtn').addEventListener('click', () => { closeSheet(); showErr('Preview: no earlier purchase found.'); });
 $('closeSheet').addEventListener('click', closeSheet);
 $('scrim').addEventListener('click', closeSheet);
 $('buyBtn').addEventListener('click', () => {
   isPro = true; const t = pendingTone; closeSheet(); renderTones();
   if (t) pick(t);
 });
+$('clearBtn').addEventListener('click', () => { $('msg').value = ''; grow(); $('msg').focus(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
-$('msg').addEventListener('input', count);
+$('msg').addEventListener('input', grow);
 
 $('origBubble').textContent = $('msg').value;
-setMood(TONES[0]); count(); renderTones();
+setMood(TONES[0]); renderTones(); grow(); toBottom();
 </script>
