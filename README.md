@@ -5,6 +5,22 @@ Type a message → tap a tone → copy the rewrite. Native iPhone + Android app 
 - **Free:** Calmer, Professional
 - **Pro (paywall):** Kinder, Firmer, Apologetic, Funnier, Confident, Shorter, Flirty, Spicy, Fired Up, Passive-Aggro, Pirate
 
+## Plans and limits
+
+| | Price | Rewrites |
+|---|---|---|
+| Free | $0 | 5 a day, free tones only |
+| Pro monthly | $1.99 / month | 50 a day, all tones |
+| Pro yearly | $4.99 / year | 50 a day, all tones |
+| Pro lifetime | $19.99 once | 50 a day, all tones |
+| Top-up packs | $0.99 / $1.99 / $4.99 | +50 / +150 / +500, never expire |
+
+Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then shows the Pro screen (free users) or the top-up screen (Pro users). Pro users can also tap **Pro ✓** to top up any time.
+
+The backend enforces all of this, so it can't be bypassed by hacking the app. Change the daily numbers with the `FREE_DAILY_LIMIT` and `PRO_DAILY_LIMIT` environment variables in Netlify. Usage is stored in Netlify Blobs, which comes with every Netlify site, so there's nothing extra to set up.
+
+**What the AI costs you:** about $0.0004 per rewrite on Gemini 3.1 Flash-Lite (paid tier, Oct 2026), so about $0.02 per 50. A Pro user who used all 50 every single day would cost about $7 a year.
+
 The app name lives in `app/app.json` and the logo text in `app/App.js`.
 
 ## How it fits together
@@ -31,7 +47,9 @@ The AI key lives only on the backend, never in the app, so nobody can steal it a
 1. Go to https://aistudio.google.com, sign in, click **Get API key**, create one.
 2. Copy it. You'll paste it into Netlify in the next step.
 
-The free tier has daily limits. Fine for testing and launch; if the app takes off, turn on billing in Google AI Studio (costs are small per rewrite).
+The free tier is fine for testing. **Turn on billing before launch:** free-tier messages may be used by Google to train its AI (paid ones aren't), and the free tier has low daily limits.
+
+Then set a monthly **spend cap** in Google AI Studio's billing settings (for example $20), so a surprise can never run past an amount you choose. If the cap is hit, rewrites pause until the next month and the app shows "Busy right now", so watch your usage as the app grows.
 
 ## Step 2: Put the backend online
 
@@ -48,11 +66,23 @@ The free tier has daily limits. Fine for testing and launch; if the app takes of
 
 1. Create a project at https://app.revenuecat.com and add an **iOS app** and an **Android app**
    (bundle ID / package: `ca.thesocietybarbers.saytwice`, or whatever you change it to).
-2. In App Store Connect and Google Play Console, create the product you'll sell. Suggested:
-   - **Saytwice Pro, lifetime unlock**, one-time purchase (e.g. $4.99), or
-   - a subscription (e.g. $1.99/month). Lifetime is simpler to launch with.
-3. In RevenueCat: create an **entitlement** called `pro`, attach your products to it, and put them in an **Offering**.
-4. In RevenueCat **Paywalls**, design the paywall screen (no code; the app shows whatever you design there).
+2. In App Store Connect and Google Play Console, create these products (use the same ids on both stores):
+
+   | Product id | Type | Price |
+   |---|---|---|
+   | `saytwice_pro_monthly` | Auto-renewing subscription | $1.99 / month |
+   | `saytwice_pro_yearly` | Auto-renewing subscription | $4.99 / year |
+   | `saytwice_pro_lifetime` | Non-consumable (one-time) | $19.99 |
+   | `saytwice_credits_50` | Consumable | $0.99 |
+   | `saytwice_credits_150` | Consumable | $1.99 |
+   | `saytwice_credits_500` | Consumable | $4.99 |
+
+   The credit ids must match exactly; the backend looks for them (`backend/netlify/functions/limits.js`).
+3. In RevenueCat:
+   - Create an **entitlement** called `pro` and attach the three Pro products to it (not the credit packs).
+   - Make the **default Offering** with the three Pro products as Monthly, Annual and Lifetime packages.
+   - Make a second Offering with the identifier `credits` holding the three credit packs.
+4. In RevenueCat **Paywalls**, design a paywall for each offering (no code; the app shows whatever you design there).
 5. **Project settings → API keys:**
    - Copy the public iOS key (`appl_…`) and Android key (`goog_…`) into `app/config.js`.
    - Copy the **secret** key (`sk_…`) into Netlify as `REVENUECAT_SECRET_KEY`.

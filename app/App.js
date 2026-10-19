@@ -17,7 +17,7 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import MoodBackground from './MoodBackground';
 import { TONES } from './tones';
 import {
-  API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT,
+  API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT, CREDITS_OFFERING,
 } from './config';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -70,6 +70,7 @@ function Main() {
   const [userId, setUserId] = useState(null);
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [left, setLeft] = useState(null); // { today, credits } from the backend
   const threadRef = useRef(null);
   const pop = useRef(new Animated.Value(1)).current;
 
@@ -103,6 +104,35 @@ function Main() {
     return false;
   }, []);
 
+  // Credit packs live in their own RevenueCat offering + paywall.
+  const openTopUp = useCallback(async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      const offering = offerings.all[CREDITS_OFFERING];
+      if (!offering) throw new Error('no credits offering');
+      const outcome = await RevenueCatUI.presentPaywall({ offering });
+      return outcome === PAYWALL_RESULT.PURCHASED;
+    } catch (e) {
+      Alert.alert('Store unavailable', 'Top-ups aren\'t set up on this build yet.');
+    }
+    return false;
+  }, []);
+
+  // --- Rewrites left -----------------------------------------------------
+  const refreshLeft = useCallback(async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: true, userId }),
+      });
+      const data = await res.json();
+      if (data?.left) setLeft(data.left);
+    } catch (e) {}
+  }, [userId]);
+
+  useEffect(() => { if (userId) refreshLeft(); }, [userId, isPro, refreshLeft]);
+
   // Restore lives on the paywall screen (RevenueCat paywalls include a Restore button).
 
   // --- Rewrite ---------------------------------------------------------
@@ -131,7 +161,15 @@ function Main() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 402) { await openPaywall(); return; }
+      if (data?.code === 'limit') {
+        setLeft(data.left);
+        setOriginal('');
+        const bought = data.pro ? await openTopUp() : await openPaywall();
+        if (bought) { await refreshLeft(); setError('You\'re topped up. Tap a tone again.'); } else setError(data.error);
+        return;
+      }
       if (!res.ok) throw new Error(data?.error || 'Something went wrong');
+      if (data.left) setLeft(data.left);
       setResult(data.text);
       pop.setValue(0);
       Animated.spring(pop, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }).start();
@@ -140,7 +178,7 @@ function Main() {
     } finally {
       setLoading(false);
     }
-  }, [message, isPro, userId, openPaywall, loading, pop]);
+  }, [message, isPro, userId, openPaywall, openTopUp, refreshLeft, loading, pop]);
 
   // --- Copy ------------------------------------------------------------
   const doCopy = useCallback(async () => {
@@ -170,7 +208,9 @@ function Main() {
           <View style={styles.header}>
             <Text style={styles.logo}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
             {isPro ? (
-              <View style={[styles.pill, styles.pillPro]}><Text style={styles.pillProText}>Pro ✓</Text></View>
+              <TouchableOpacity onPress={openTopUp} style={[styles.pill, styles.pillPro]}>
+                <Text style={styles.pillProText}>Pro ✓</Text>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={openPaywall} style={styles.pill}>
                 <Text style={styles.pillText}>Unlock all</Text>
@@ -242,7 +282,9 @@ function Main() {
 
           {/* tone strip */}
           <View style={styles.stripHead}>
-            <Text style={styles.stripLabel}>TAP A TONE</Text>
+            <Text style={styles.stripLabel}>
+              TAP A TONE{left ? `  ·  ${left.today} LEFT TODAY${left.credits ? ` + ${left.credits}` : ''}` : ''}
+            </Text>
             <Text style={styles.stripLabel}>SWIPE →</Text>
           </View>
           <ScrollView
