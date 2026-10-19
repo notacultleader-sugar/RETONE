@@ -293,7 +293,7 @@ function ToneTile({ tone, active, locked, showFree, disabled, onPress }) {
   const inner = (
     <>
       <Text style={[styles.tileEmoji, locked && { opacity: 0.5 }]}>{tone.emoji}</Text>
-      <Text style={[styles.tileName, active && { color: INK }, locked && { color: MUTED }]} numberOfLines={1}>{tone.label}</Text>
+      <Text style={[styles.tileName, active && { color: INK }, locked && { color: MUTED }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{tone.label}</Text>
       {showFree && <View style={[styles.tag, styles.tagFree]}><Text style={styles.tagFreeText}>FREE</Text></View>}
       {locked && <View style={[styles.tag, styles.tagLock]}><Text style={styles.tagLockText}>PRO</Text></View>}
     </>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   stripContent: { paddingHorizontal: 16, gap: 8 },
   col: { gap: 8 },
   tile: {
-    width: 96, height: 58, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8,
+    width: 120, height: 58, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8,
     justifyContent: 'space-between', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE,
   },
   tileActive: { borderColor: 'transparent' },
