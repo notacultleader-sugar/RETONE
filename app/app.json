@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#111116",
+    "backgroundColor": "#12151f",
     "ios": {
       "bundleIdentifier": "ca.thesocietybarbers.retone",
       "supportsTablet": false

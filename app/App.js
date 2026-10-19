@@ -198,7 +198,7 @@ function Main() {
             <View style={styles.resultCard}>
               <Text style={styles.resultLabel}>{activeLabel ? `${activeLabel} version` : 'Result'}</Text>
               {loading ? (
-                <ActivityIndicator color="#c7f464" style={{ marginVertical: 24 }} />
+                <ActivityIndicator color={ACCENT} style={{ marginVertical: 24 }} />
               ) : (
                 <>
                   <Text style={styles.resultText} selectable>{result}</Text>
@@ -221,9 +221,10 @@ function Main() {
   );
 }
 
-const BG = '#111116';
-const CARD = '#1c1c24';
-const ACCENT = '#c7f464';
+const BG = '#12151f';
+const CARD = '#1d2130';
+const ACCENT = '#ffd23f';
+const BUBBLE = '#2f7bf6';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
@@ -252,9 +253,14 @@ const styles = StyleSheet.create({
   lock: { fontSize: 11, marginLeft: 6 },
   resultCard: { backgroundColor: CARD, borderRadius: 16, padding: 18 },
   resultLabel: { color: ACCENT, fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
-  resultText: { color: '#fff', fontSize: 17, lineHeight: 25 },
+  resultText: {
+    alignSelf: 'flex-end', maxWidth: '88%', backgroundColor: BUBBLE, color: '#fff',
+    fontSize: 17, lineHeight: 24, paddingHorizontal: 14, paddingVertical: 10,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20, borderBottomLeftRadius: 20, borderBottomRightRadius: 6,
+    overflow: 'hidden',
+  },
   copyBtn: { marginTop: 18, backgroundColor: ACCENT, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  copyBtnDone: { backgroundColor: '#8fd16a' },
+  copyBtnDone: { backgroundColor: '#7ddc8a' },
   copyText: { color: BG, fontSize: 16, fontWeight: '800' },
   restore: { alignItems: 'center', marginTop: 28 },
   restoreText: { color: '#5c5c68', fontSize: 13, textDecorationLine: 'underline' },

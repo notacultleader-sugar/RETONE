@@ -1,0 +1,283 @@
+<title>Retone Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: one phone-width column, exactly like the native app; paywall is a bottom sheet. */
+:root {
+  --ink: #12151f;
+  --card: #1d2130;
+  --line: #2b3044;
+  --text: #f3f1ea;
+  --muted: #9aa0b4;
+  --hi: #ffd23f;        /* highlighter yellow */
+  --bubble: #2f7bf6;    /* outgoing text bubble */
+  --warn: #ff6b4a;
+  --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--ink); color: var(--text); }
+body { font-family: var(--body); font-size: 16px; }
+.wrap {
+  max-width: 440px; margin: 0 auto;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+.banner {
+  font-size: 12px; color: var(--muted); background: var(--card);
+  border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; text-align: center;
+}
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { font-family: var(--display); font-weight: 800; font-size: 34px; letter-spacing: -1.2px; margin: 0; }
+.logo span { background: linear-gradient(transparent 58%, var(--hi) 58%); color: var(--text); padding: 0 2px; }
+.pill {
+  font: 700 14px var(--body); color: var(--ink); background: var(--hi);
+  border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+}
+.pill.pro { background: transparent; color: var(--hi); border: 1.5px solid var(--hi); cursor: default; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+textarea {
+  width: 100%; box-sizing: border-box; min-height: 120px; resize: vertical;
+  background: var(--card); color: var(--text); border: 1.5px solid var(--line);
+  border-radius: 18px; padding: 14px 16px; font: 17px/1.45 var(--body);
+}
+textarea:focus-visible, button:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.count { font-size: 12px; color: var(--muted); text-align: right; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tones { display: flex; flex-wrap: wrap; gap: 9px; }
+.tone {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--card); color: var(--text); border: 1.5px solid var(--line);
+  border-radius: 999px; padding: 10px 14px; font: 600 15px var(--body); cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.tone:hover { border-color: var(--muted); }
+.tone:active { transform: scale(.96); }
+.tone.active { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, var(--card)); }
+.tone.locked { color: var(--muted); }
+.tone .lock { font-size: 11px; }
+.tone .free { font-size: 10px; font-weight: 700; color: var(--ink); background: var(--hi); border-radius: 4px; padding: 1px 5px; letter-spacing: .5px; }
+.tone[disabled] { opacity: .5; cursor: wait; }
+.result { display: flex; flex-direction: column; gap: 10px; }
+.thread { background: var(--card); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.meta { font-size: 12px; color: var(--muted); text-align: right; }
+.bubble {
+  align-self: flex-end; max-width: 86%; background: var(--bubble); color: #fff;
+  border-radius: 20px 20px 6px 20px; padding: 10px 14px; font-size: 16.5px; line-height: 1.4;
+  white-space: pre-wrap; overflow-wrap: anywhere; user-select: text;
+}
+.bubble.orig { background: var(--line); color: var(--muted); font-size: 14px; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.typing { align-self: flex-end; background: var(--bubble); border-radius: 20px; padding: 12px 16px; display: flex; gap: 5px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: #fff; opacity: .5; animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
+@keyframes blink { 50% { opacity: 1; transform: translateY(-2px); } }
+.copy {
+  width: 100%; border: 0; border-radius: 14px; padding: 15px; cursor: pointer;
+  font: 800 16px var(--body); background: var(--hi); color: var(--ink);
+}
+.copy.done { background: #7ddc8a; }
+.err { color: var(--warn); font-size: 14px; }
+.restore { background: none; border: 0; color: var(--muted); font: 13px var(--body); text-decoration: underline; cursor: pointer; align-self: center; }
+.confirm { background: color-mix(in srgb, var(--warn) 14%, var(--card)); border: 1.5px solid var(--warn); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.confirm p { margin: 0; }
+.row { display: flex; gap: 10px; }
+.row button { flex: 1; border-radius: 12px; padding: 12px; font: 700 15px var(--body); cursor: pointer; border: 1.5px solid var(--line); background: var(--card); color: var(--text); }
+.row .danger { background: var(--warn); border-color: var(--warn); color: var(--ink); }
+
+/* Paywall bottom sheet */
+.scrim { position: fixed; inset: 0; background: rgba(5,6,10,.7); z-index: 20; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+  max-width: 440px; margin: 0 auto; background: var(--card);
+  border-radius: 26px 26px 0 0; border-top: 1px solid var(--line);
+  padding-block: 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+  animation: up .25s ease-out;
+}
+@keyframes up { from { transform: translateY(40px); opacity: .6; } }
+.sheet h2 { font-family: var(--display); font-weight: 800; font-size: 28px; letter-spacing: -.8px; margin: 0; text-wrap: balance; }
+.sheet p { margin: 0; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { font-size: 13px; background: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; }
+.price { font-family: var(--display); font-weight: 800; font-size: 22px; }
+.price small { font-family: var(--body); font-weight: 500; font-size: 13px; color: var(--muted); }
+.close { background: none; border: 0; color: var(--muted); font: 14px var(--body); cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="banner">Preview of the Retone app. Rewrites are real; the paywall is pretend, nothing is charged.</div>
+
+  <header>
+    <h1 class="logo"><span>Retone</span></h1>
+    <button class="pill" id="unlockBtn" type="button">Unlock all</button>
+  </header>
+
+  <section>
+    <p class="label"><label for="msg">What do you want to say?</label></p>
+    <textarea id="msg" maxlength="1000">ok whatever. you said you'd be home by 6 and it's 8. dinner's cold. do what you want</textarea>
+    <div class="count" id="count">0/1000</div>
+  </section>
+
+  <section>
+    <p class="label">Pick a tone</p>
+    <div class="tones" id="tones"></div>
+  </section>
+
+  <section class="result" id="result">
+    <div class="thread" id="thread">
+      <div class="bubble orig" id="origBubble"></div>
+      <div class="bubble" id="outBubble">Hey, I was expecting you at 6 and it's 8 now. Dinner's gone cold and I'm a bit frustrated. Can we talk about it when you're home?</div>
+      <div class="meta" id="meta">Example · Calmer</div>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <p><strong>You sure?</strong> This one might start a fire.</p>
+      <div class="row">
+        <button type="button" id="coolOff">Cool off</button>
+        <button type="button" class="danger" id="copyAnyway">Copy it</button>
+      </div>
+    </div>
+    <button class="copy" id="copyBtn" type="button">Copy to clipboard</button>
+    <div class="err" id="err" hidden></div>
+  </section>
+
+  <button class="restore" id="restoreBtn" type="button">Restore purchases</button>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="pwTitle" hidden>
+  <h2 id="pwTitle">Say it exactly how you mean it.</h2>
+  <p>Unlock every tone, forever.</p>
+  <div class="chips" id="pwChips"></div>
+  <div class="price">$4.99 <small>one-time · example price</small></div>
+  <button class="copy" id="buyBtn" type="button">Unlock all tones</button>
+  <button class="close" id="closeSheet" type="button">Not now</button>
+</div>
+
+<script>
+const TONES = [
+  { id: 'calmer', label: 'Calmer', emoji: '🧊', free: true, prompt: 'Rewrite it to sound calm and level-headed. Remove anger, blame and harsh words, but keep the actual point.' },
+  { id: 'professional', label: 'Professional', emoji: '💼', free: true, prompt: 'Rewrite it to sound polished and professional, like a message to a boss, client or coworker.' },
+  { id: 'kinder', label: 'Kinder', emoji: '💛', prompt: 'Rewrite it to sound warm, caring and kind, without being fake or over the top.' },
+  { id: 'firmer', label: 'Firmer', emoji: '🪨', prompt: 'Rewrite it to sound firm and clear, setting a boundary respectfully. No apologising for the point itself.' },
+  { id: 'apologetic', label: 'Apologetic', emoji: '🙏', prompt: 'Rewrite it as a sincere apology that takes responsibility without grovelling.' },
+  { id: 'funnier', label: 'Funnier', emoji: '😂', prompt: 'Rewrite it to be funny and lighthearted while still getting the point across.' },
+  { id: 'confident', label: 'Confident', emoji: '😎', prompt: 'Rewrite it to sound confident and self-assured. Remove hedging like "sorry", "just", "maybe".' },
+  { id: 'shorter', label: 'Shorter', emoji: '✂️', prompt: 'Rewrite it as short as possible while keeping the meaning. Text-message length.' },
+  { id: 'flirty', label: 'Flirty', emoji: '😏', prompt: 'Rewrite it to be playful and flirty, like texting someone you have a crush on. Keep it charming, not crude.' },
+  { id: 'spicy', label: 'Spicy', emoji: '🌶️', prompt: 'Rewrite it to be suggestive and steamy for a romantic partner, using innuendo and teasing. Keep it tasteful: no explicit sexual descriptions.' },
+  { id: 'angrier', label: 'Fired Up', emoji: '🔥', confirm: true, prompt: 'Rewrite it to sound noticeably more frustrated and fired up, so the reader knows the sender is upset. No slurs, threats or personal attacks on appearance or identity.' },
+  { id: 'passive', label: 'Passive-Aggro', emoji: '🙂', prompt: 'Rewrite it in an over-the-top passive-aggressive tone, sweet on the surface with obvious shade underneath. Play it for laughs.' },
+  { id: 'pirate', label: 'Pirate', emoji: '🏴‍☠️', prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.' },
+];
+const SYSTEM = 'You rewrite text messages in a requested tone. Keep the original meaning, facts and intent. Do not add new information or promises. Write it as the sender, in first person, ready to paste into a text. Match the casualness of a text message unless the tone says otherwise. Return ONLY the rewritten message. No quotes, no explanations, no options. If the message asks for something harmful (threats, harassment, illegal acts), reply exactly: Sorry, I can\'t rewrite that one.';
+
+const $ = (id) => document.getElementById(id);
+let isPro = false, active = 'calmer', busy = false, pendingTone = null, ctrl = null;
+let samplePromise = null;
+const getSample = () => (samplePromise ??= (window.claude?.use ? window.claude.use('sample') : Promise.resolve(null)));
+
+function renderTones() {
+  const box = $('tones'); box.textContent = '';
+  for (const t of TONES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tone';
+    const locked = !t.free && !isPro;
+    if (locked) b.classList.add('locked');
+    if (t.id === active) b.classList.add('active');
+    b.disabled = busy;
+    b.innerHTML = `<span>${t.emoji}</span><span></span>${t.free && !isPro ? '<span class="free">FREE</span>' : ''}${locked ? '<span class="lock">🔒</span>' : ''}`;
+    b.children[1].textContent = t.label;
+    b.addEventListener('click', () => pick(t));
+    box.appendChild(b);
+  }
+  $('unlockBtn').textContent = isPro ? 'Pro ✓' : 'Unlock all';
+  $('unlockBtn').classList.toggle('pro', isPro);
+  $('restoreBtn').hidden = isPro;
+}
+
+function count() { $('count').textContent = `${$('msg').value.length}/1000`; }
+
+function openSheet(tone) {
+  pendingTone = tone || null;
+  $('pwChips').textContent = '';
+  TONES.filter((t) => !t.free).forEach((t) => {
+    const s = document.createElement('span'); s.textContent = `${t.emoji} ${t.label}`; $('pwChips').appendChild(s);
+  });
+  $('scrim').hidden = false; $('sheet').hidden = false; $('buyBtn').focus();
+}
+function closeSheet() { $('scrim').hidden = true; $('sheet').hidden = true; pendingTone = null; }
+
+async function pick(tone) {
+  if (busy) return;
+  if (!tone.free && !isPro) { openSheet(tone); return; }
+  const message = $('msg').value.trim();
+  $('err').hidden = true; $('confirm').hidden = true;
+  if (!message) { showErr('Type a message first.'); return; }
+
+  active = tone.id; busy = true; renderTones();
+  $('origBubble').textContent = message;
+  $('outBubble').hidden = true; $('meta').textContent = tone.label;
+  const typing = document.createElement('div'); typing.className = 'typing'; typing.innerHTML = '<i></i><i></i><i></i>';
+  $('thread').insertBefore(typing, $('meta'));
+  $('copyBtn').disabled = true;
+
+  const sample = await getSample();
+  try {
+    if (!sample) { samplePromise = null; throw { code: 'not_granted' }; }
+    ctrl?.abort(); ctrl = new AbortController();
+    const res = await sample(`${SYSTEM}\n\nTone: ${tone.prompt}\n\nMessage:\n${message}`, { modelTier: 'quick', cache: false, signal: ctrl.signal });
+    $('outBubble').textContent = res.text.trim().replace(/^"|"$/g, '');
+    $('meta').textContent = `${tone.label} · just now`;
+  } catch (e) {
+    $('outBubble').textContent = message;
+    if (e?.code === 'not_granted') showErr('Live rewrites need permission. Allow it when asked, or open this in the Claude app.');
+    else if (e?.code === 'rate_limited') showErr('Too many rewrites in a row. Wait a moment and try again.');
+    else showErr('That rewrite didn\'t come through. Tap the tone again.');
+  } finally {
+    typing.remove(); $('outBubble').hidden = false; $('copyBtn').disabled = false;
+    busy = false; renderTones();
+  }
+}
+
+function showErr(t) { $('err').textContent = t; $('err').hidden = false; }
+
+async function doCopy() {
+  const text = $('outBubble').textContent;
+  $('confirm').hidden = true;
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const r = document.createRange(); r.selectNodeContents($('outBubble'));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    showErr('Text selected. Press copy on your keyboard or long-press to copy.');
+    return;
+  }
+  $('copyBtn').textContent = 'Copied ✓'; $('copyBtn').classList.add('done');
+  setTimeout(() => { $('copyBtn').textContent = 'Copy to clipboard'; $('copyBtn').classList.remove('done'); }, 1800);
+}
+
+$('copyBtn').addEventListener('click', () => {
+  const t = TONES.find((x) => x.id === active);
+  if (t?.confirm) { $('confirm').hidden = false; return; }
+  doCopy();
+});
+$('copyAnyway').addEventListener('click', doCopy);
+$('coolOff').addEventListener('click', () => { $('confirm').hidden = true; });
+$('unlockBtn').addEventListener('click', () => { if (!isPro) openSheet(); });
+$('restoreBtn').addEventListener('click', () => showErr('Preview: no earlier purchase found.'));
+$('closeSheet').addEventListener('click', closeSheet);
+$('scrim').addEventListener('click', closeSheet);
+$('buyBtn').addEventListener('click', () => {
+  isPro = true; const t = pendingTone; closeSheet(); renderTones();
+  if (t) pick(t);
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+$('msg').addEventListener('input', count);
+
+$('origBubble').textContent = $('msg').value;
+count(); renderTones();
+</script>
