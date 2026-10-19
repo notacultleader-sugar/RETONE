@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Retone",
+    "slug": "retone",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#111116",
+    "ios": {
+      "bundleIdentifier": "ca.thesocietybarbers.retone",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "ca.thesocietybarbers.retone",
+      "permissions": []
+    }
+  }
+}
