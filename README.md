@@ -1,11 +1,11 @@
-# Retone
+# Saytwice
 
 Type a message → tap a tone → copy the rewrite. Native iPhone + Android app from one codebase.
 
 - **Free:** Calmer, Professional
 - **Pro (paywall):** Kinder, Firmer, Apologetic, Funnier, Confident, Shorter, Flirty, Spicy, Fired Up, Passive-Aggro, Pirate
 
-"Retone" is a placeholder name. Change it in `app/app.json` and the logo text in `app/App.js`.
+The app name lives in `app/app.json` and the logo text in `app/App.js`.
 
 ## How it fits together
 
@@ -41,15 +41,15 @@ The free tier has daily limits. Fine for testing and launch; if the app takes of
    - `GEMINI_API_KEY` = your key from step 1
    - `REVENUECAT_SECRET_KEY` = from step 3 (add it after)
 3. Redeploy. Your API address is:
-   `https://YOUR-SITE.netlify.app/.netlify/functions/retone`
+   `https://YOUR-SITE.netlify.app/.netlify/functions/saytwice`
 4. Paste that into `API_URL` in `app/config.js`.
 
 ## Step 3: Set up the paywall in RevenueCat
 
 1. Create a project at https://app.revenuecat.com and add an **iOS app** and an **Android app**
-   (bundle ID / package: `ca.thesocietybarbers.retone`, or whatever you change it to).
+   (bundle ID / package: `ca.thesocietybarbers.saytwice`, or whatever you change it to).
 2. In App Store Connect and Google Play Console, create the product you'll sell. Suggested:
-   - **Retone Pro, lifetime unlock**, one-time purchase (e.g. $4.99), or
+   - **Saytwice Pro, lifetime unlock**, one-time purchase (e.g. $4.99), or
    - a subscription (e.g. $1.99/month). Lifetime is simpler to launch with.
 3. In RevenueCat: create an **entitlement** called `pro`, attach your products to it, and put them in an **Offering**.
 4. In RevenueCat **Paywalls**, design the paywall screen (no code; the app shows whatever you design there).
