@@ -21,14 +21,14 @@ The store is a screen built into the app (`app/Store.js`) where anyone can buy c
 
 The backend enforces all of this, so it can't be bypassed by hacking the app. Change the daily numbers with the `FREE_DAILY_LIMIT` and `PRO_DAILY_LIMIT` environment variables in Netlify. Usage is stored in Netlify Blobs, which comes with every Netlify site, so there's nothing extra to set up.
 
-**What the AI costs you:** about $0.0004 per rewrite on Gemini 3.1 Flash-Lite (paid tier, Oct 2026), so about $0.02 per 50. A Pro user who used all 50 every single day would cost about $7 a year.
+**What the AI costs you:** about $0.00015 per rewrite on Claude Haiku 5.5 ($0.10 / $0.50 per million tokens in / out, Nov 2026), so under a cent per 50. A Pro user who used all 50 every single day would cost about $3 a year.
 
 The app name lives in `app/app.json` and the logo text in `app/App.js`.
 
 ## How it fits together
 
 ```
-Phone app (Expo / React Native)  ──►  Your backend (Netlify function)  ──►  Google Gemini (free AI)
+Phone app (Expo / React Native)  ──►  Your backend (Netlify function)  ──►  Claude (Anthropic's AI)
         │                                      │
         └── RevenueCat (paywall + purchases) ◄─┘  checks the user really paid
 ```
@@ -39,26 +39,24 @@ The AI key lives only on the backend, never in the app, so nobody can steal it a
 
 - Apple Developer and Google Play accounts (your existing Society Barbers ones work)
 - A free Netlify account (you already have one for the shop site)
-- A free Google AI Studio account (for the AI key)
+- An Anthropic Console account (for the Claude AI key; a few dollars of prepaid credit to start)
 - A free RevenueCat account (handles the paywall and both app stores)
 - A free Expo account
 - Node.js installed on your computer
 
-## Step 1: Get the free AI key
+## Step 1: Get the Claude AI key
 
-1. Go to https://aistudio.google.com, sign in, click **Get API key**, create one.
-2. Copy it. You'll paste it into Netlify in the next step.
+1. Go to https://console.anthropic.com, sign up, and add a few dollars of credit under **Billing** ($5 covers tens of thousands of rewrites).
+2. Go to **API keys**, click **Create key**, and copy it (it starts with `sk-ant-`). You'll paste it into Netlify in the next step.
 
-The free tier is fine for testing. **Turn on billing before launch:** free-tier messages may be used by Google to train its AI (paid ones aren't), and the free tier has low daily limits.
-
-Then set a monthly **spend cap** in Google AI Studio's billing settings (for example $20), so a surprise can never run past an amount you choose. If the cap is hit, rewrites pause until the next month and the app shows "Busy right now", so watch your usage as the app grows.
+Claude bills from prepaid credit, so with auto-reload left off you can never be charged more than you've loaded. Anthropic doesn't use API messages to train its AI.
 
 ## Step 2: Put the backend online
 
 1. In Netlify, **Add new site → Deploy manually**, and drag in the `backend` folder.
    (Or put it in a GitHub repo and connect that.)
 2. **Site settings → Environment variables**, add:
-   - `GEMINI_API_KEY` = your key from step 1
+   - `ANTHROPIC_API_KEY` = your Claude key from step 1
    - `REVENUECAT_SECRET_KEY` = from step 3 (add it after)
 3. Redeploy. Your API address is:
    `https://YOUR-SITE.netlify.app/.netlify/functions/saytwice`
@@ -120,7 +118,7 @@ eas submit --platform android
 
 **Before submitting:**
 - App icon and splash screen (add to `app/app.json`)
-- A privacy policy page (messages are sent to Google's AI to be rewritten; say so)
+- A privacy policy page (messages are sent to Anthropic's Claude AI to be rewritten; say so)
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
 - Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
 
