@@ -2,12 +2,13 @@
 //                   POST { status: true, userId }   -> { left: { today, credits }, pro }
 //
 // Environment variables (set in Netlify > Site settings > Environment variables):
-//   GEMINI_API_KEY        - key from https://aistudio.google.com (turn on billing before launch)
-//   GEMINI_MODEL          - optional, defaults to gemini-3.1-flash-lite (cheapest)
+//   ANTHROPIC_API_KEY     - Claude API key from https://console.anthropic.com (starts with sk-ant-)
+//   CLAUDE_MODEL          - optional, defaults to claude-haiku-5-5 (cheapest)
 //   REVENUECAT_SECRET_KEY - secret API key from RevenueCat (starts with sk_)
 //   PRO_ENTITLEMENT       - optional, defaults to "pro"
 //   FREE_DAILY_LIMIT / PRO_DAILY_LIMIT - optional, default 5 and 50 rewrites a day
 
+const Anthropic = require('@anthropic-ai/sdk');
 const { connectLambda } = require('@netlify/blobs');
 const TONES = require('./tones');
 const { allowance, spend, FREE_DAILY, PRO_DAILY } = require('./limits');
@@ -51,28 +52,30 @@ function hasPro(subscriber) {
   return ent.expires_date === null || new Date(ent.expires_date) > new Date();
 }
 
+const claude = new Anthropic(); // reads ANTHROPIC_API_KEY
+
 async function rewrite(message, tonePrompt) {
-  const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{
-        role: 'user',
-        parts: [{ text: `Tone: ${tonePrompt}\n\nMessage:\n${message}` }],
-      }],
-      generationConfig: { temperature: 0.8, maxOutputTokens: 600 },
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    console.error('Gemini error', res.status, JSON.stringify(data));
-    if (res.status === 429) throw Object.assign(new Error('Busy right now, try again in a minute.'), { status: 429 });
+  let res;
+  try {
+    res = await claude.messages.create({
+      model: process.env.CLAUDE_MODEL || 'claude-haiku-5-5',
+      max_tokens: 600,
+      // A rewrite doesn't need reasoning; thinking off keeps each one fast and cheap.
+      thinking: { type: 'disabled' },
+      output_config: { effort: 'low' },
+      system: SYSTEM,
+      messages: [{ role: 'user', content: `Tone: ${tonePrompt}\n\nMessage:\n${message}` }],
+    });
+  } catch (e) {
+    console.error('Claude error', e?.status, e?.message);
+    if (e instanceof Anthropic.RateLimitError || e?.status === 529) {
+      throw Object.assign(new Error('Busy right now, try again in a minute.'), { status: 429 });
+    }
     throw new Error('The AI had a hiccup. Try again.');
   }
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim();
+  // A declined message doesn't use up one of the user's rewrites.
+  if (res.stop_reason === 'refusal') throw Object.assign(new Error('Sorry, I can\'t rewrite that one.'), { status: 400 });
+  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
   if (!text) throw new Error('No rewrite came back. Try rewording your message.');
   return text;
 }

@@ -2,6 +2,7 @@
   "name": "saytwice-backend",
   "private": true,
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
     "@netlify/blobs": "^11.1.4"
   }
 }
