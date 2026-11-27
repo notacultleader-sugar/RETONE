@@ -41,7 +41,7 @@ The AI key lives only on the backend, never in the app, so nobody can steal it a
 - A free Netlify account (you already have one for the shop site)
 - An Anthropic Console account (for the Claude AI key; a few dollars of prepaid credit to start)
 - A free RevenueCat account (handles the paywall and both app stores)
-- A free Expo account
+- A Codemagic account (builds the iPhone and Android apps in the cloud, no Mac needed)
 - Node.js installed on your computer
 
 ## Step 1: Get the Claude AI key
@@ -87,37 +87,44 @@ Claude bills from prepaid credit, so with auto-reload left off you can never be 
    - Copy the public iOS key (`appl_…`) and Android key (`goog_…`) into `app/config.js`.
    - Copy the **secret** key (`sk_…`) into Netlify as `REVENUECAT_SECRET_KEY`.
 
-## Step 4: Install and run the app
+## Step 4: Run it on your computer (optional)
 
 In a terminal, inside the `app` folder:
 
 ```bash
-npm install expo
-npx expo install react react-native expo-status-bar expo-clipboard expo-haptics expo-linear-gradient expo-splash-screen expo-font react-native-svg react-native-safe-area-context react-native-purchases react-native-purchases-ui expo-dev-client @expo-google-fonts/unbounded @expo-google-fonts/dm-sans
-npm install -g eas-cli
-eas login
-eas build:configure
+npm install
+npx expo start
 ```
 
-Purchases don't work in the Expo Go app, so build a test version for your phone:
+Purchases don't work in the Expo Go app, so to test the paywall use a Codemagic test build (next step).
 
-```bash
-eas build --profile development --platform ios      # or android
-npx expo start --dev-client
-```
+## Step 5: Build with Codemagic
 
-Expo builds the iPhone version in the cloud, so you don't need a Mac.
+`codemagic.yaml` (in the repo's top folder) has two workflows: **iOS release** sends a build to TestFlight, and **Android release** sends one to Google Play's internal testing track. Neither publishes to the public; you release from App Store Connect / Play Console when you're ready.
 
-## Step 5: Ship it
+One-time setup:
 
-```bash
-eas build --platform all
-eas submit --platform ios
-eas submit --platform android
-```
+1. **Add the app in Codemagic:** Add application, connect GitHub, pick the `RETONE` repo. Codemagic finds `codemagic.yaml` by itself.
+2. **Apple:**
+   - In App Store Connect, create the app (bundle ID `ca.thesocietybarbers.saytwice`). Copy its **Apple ID** number (App Information page) into `APP_STORE_APPLE_ID` in `codemagic.yaml`.
+   - In App Store Connect, **Users and Access → Integrations → App Store Connect API**, create a key with App Manager access and download it.
+   - In Codemagic, **Team settings → Integrations → Developer Portal**, add that key and name it `codemagic`.
+   - In Codemagic, **Team settings → Code signing identities**, generate an iOS distribution certificate and fetch the App Store provisioning profile for the bundle ID.
+3. **Android:**
+   - Make an upload key once, and keep the file and passwords somewhere safe (lose it and you need Google's help to replace it):
+     `keytool -genkey -v -keystore saytwice-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+   - In Codemagic, **Team settings → Code signing identities → Android keystores**, upload it with the reference name `saytwice_upload_key`.
+   - In Google Cloud, create a service account, download its JSON key, and invite its email in Play Console (**Users and permissions**) with release permissions. In Codemagic, **Environment variables**, add a secret `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` with the JSON contents in a group called `google_play`.
+   - Google requires the very first upload of a new app to be done by hand: run the Android workflow once, download the `.aab` from the build page, and upload it in Play Console. After that, Codemagic uploads automatically.
+4. Start a build: **Start new build**, pick the workflow. Build numbers go up by themselves.
+
+The app icon is `app/assets/icon.png` (and `adaptive-icon.png` for Android); replace them to change it.
+
+## Step 6: Ship it
+
+From TestFlight / internal testing, submit for review in App Store Connect and Play Console.
 
 **Before submitting:**
-- App icon and splash screen (add to `app/app.json`)
 - A privacy policy page (messages are sent to Anthropic's Claude AI to be rewritten; say so)
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
 - Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
