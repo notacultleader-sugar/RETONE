@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert, StyleSheet, Linking } from 'react-native';
 import Purchases from 'react-native-purchases';
 import * as Haptics from 'expo-haptics';
-import { CREDITS_OFFERING } from './config';
+import { CREDITS_OFFERING, PRIVACY_URL, TERMS_URL, PRO_ENTITLEMENT } from './config';
+import { offeringsWithRetry, withTimeout, MANAGE_SUBSCRIPTION_URL } from './rc';
 import { adPrivacyOptionsRequired, showAdPrivacyOptions } from './ads';
 
 const INK = '#0b0b12';
@@ -25,13 +26,30 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
     if (visible && !isPro) adPrivacyOptionsRequired().then(setAdChoices);
   }, [visible, isPro]);
 
-  useEffect(() => {
-    if (!visible || packs) return;
-    Purchases.getOfferings()
-      .then((o) => setPacks((o.all[CREDITS_OFFERING]?.availablePackages || [])
-        .filter(amountOf).sort((a, b) => amountOf(a) - amountOf(b))))
-      .catch(() => setPacks([]));
-  }, [visible, packs]);
+  const [restoring, setRestoring] = useState(false);
+
+  // Prices come from the store (never typed in here). Retries for ~30s, then offers Try again.
+  const loadPacks = () => {
+    setPacks(null);
+    offeringsWithRetry((o) => {
+      const list = (o?.all?.[CREDITS_OFFERING]?.availablePackages || []).filter(amountOf);
+      return list.length ? list.sort((a, b) => amountOf(a) - amountOf(b)) : null;
+    }).then((list) => setPacks(list || []));
+  };
+  useEffect(() => { if (visible && !packs) loadPacks(); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const restore = async () => {
+    setRestoring(true);
+    try {
+      const info = await withTimeout(Purchases.restorePurchases(), 30000, 'Restore');
+      await onBought();
+      Alert.alert('Restored', info?.entitlements?.active?.[PRO_ENTITLEMENT] ? 'Pro is back on.' : 'Nothing to restore on this account.');
+    } catch (e) {
+      Alert.alert('Restore didn\'t work', e?.message || 'Try again in a moment.');
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const buy = async (pkg) => {
     setBuying(pkg.identifier);
@@ -63,7 +81,10 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
         {packs === null ? (
           <ActivityIndicator color={TEXT} style={{ marginVertical: 30 }} />
         ) : packs.length === 0 ? (
-          <Text style={[styles.sub, { marginVertical: 20 }]}>The store isn't set up on this build yet.</Text>
+          <View style={{ alignItems: 'center', marginVertical: 14, gap: 10 }}>
+            <Text style={styles.sub}>Couldn't reach the store. Check your connection.</Text>
+            <TouchableOpacity style={styles.retry} onPress={loadPacks}><Text style={styles.retryText}>Try again</Text></TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.packs}>
             {packs.map((pkg) => {
@@ -90,6 +111,12 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
             <Text style={styles.proText}>Or go Pro: every tone, 50 a day, no ads</Text>
           </TouchableOpacity>
         )}
+        <View style={styles.links}>
+          <Text style={styles.link} onPress={restore}>{restoring ? 'Restoring…' : 'Restore purchases'}</Text>
+          {isPro && <Text style={styles.link} onPress={() => Linking.openURL(MANAGE_SUBSCRIPTION_URL)}>Manage subscription</Text>}
+          <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
+          <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy</Text>
+        </View>
         {!isPro && adChoices && (
           <TouchableOpacity style={styles.adChoices} onPress={showAdPrivacyOptions}>
             <Text style={styles.adChoicesText}>Ad privacy choices</Text>
@@ -125,6 +152,10 @@ const styles = StyleSheet.create({
   price: { alignSelf: 'stretch', alignItems: 'center', backgroundColor: TEXT, borderRadius: 999, paddingVertical: 8, minHeight: 34, justifyContent: 'center' },
   priceText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: INK },
   pro: { alignItems: 'center', paddingVertical: 10 },
+  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 16, rowGap: 6 },
+  link: { fontFamily: 'DMSans_500Medium', fontSize: 12, color: MUTED, textDecorationLine: 'underline' },
+  retry: { backgroundColor: TEXT, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 9 },
+  retryText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: INK },
   adChoices: { alignItems: 'center', marginTop: -8 },
   adChoicesText: { fontFamily: 'DMSans_400Regular', fontSize: 12, color: MUTED },
   proText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: TEXT, textDecorationLine: 'underline' },
