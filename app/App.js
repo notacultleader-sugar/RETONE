@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, StyleSheet,
-  Alert, Platform, KeyboardAvoidingView, Animated, Easing,
+  Alert, Platform, KeyboardAvoidingView, Animated, Easing, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -47,6 +47,30 @@ const COLUMNS = TONES.reduce((cols, t, i) => {
   return cols;
 }, []);
 
+// --- Screen sizes ----------------------------------------------------------
+// The app is one screen with no page scroll, so it adapts to the space it has:
+//  - tablets (iPad, Android tablets) get a centred column instead of stretching edge to edge,
+//    slightly bigger type, and every tone laid out at once (no swiping) when there's room.
+//  - "compact" (small phones like iPhone SE, or the keyboard is up): tighter spacing, smaller headline.
+//  - "tight" (small phone with the keyboard up, tablet in landscape with the keyboard up):
+//    the headline hides and the tones become one swipeable row, so the conversation stays visible.
+const TABLET_MIN_SIDE = 600; // dp; iPad mini is 744, the biggest phones are ~440
+const COLUMN_MAX = 640;
+function layoutFor(winW, winH, areaH) {
+  const tablet = Math.min(winW, winH) >= TABLET_MIN_SIDE;
+  const fit = areaH < 480 ? 'tight' : areaH < 620 ? 'compact' : 'roomy';
+  const colW = Math.min(winW, COLUMN_MAX) - 32;
+  const perRow = Math.floor((colW + 8) / (128 + 8));
+  // Grid shows every tone with no swiping: only when there's width for 4+ per row and height to spare.
+  const rows = Math.ceil(TONES.length / Math.max(perRow, 1));
+  const grid = perRow >= 4 && fit === 'roomy' && areaH - rows * 66 >= 420;
+  return {
+    tablet, fit, grid,
+    gridTileW: grid ? Math.floor((colW - (perRow - 1) * 8) / perRow) : 0,
+    k: tablet ? 1.15 : winW < 360 ? 0.92 : 1, // type scale
+  };
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Unbounded_800ExtraBold, Unbounded_900Black, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
@@ -75,6 +99,11 @@ function Main() {
   const [storeOpen, setStoreOpen] = useState(false);
   const threadRef = useRef(null);
   const pop = useRef(new Animated.Value(1)).current;
+  const { width: winW, height: winH } = useWindowDimensions();
+  const [areaH, setAreaH] = useState(winH);
+  const L = layoutFor(winW, winH, areaH);
+  const tight = L.fit === 'tight';
+  const compact = L.fit !== 'roomy';
 
   // --- Purchases setup -------------------------------------------------
   useEffect(() => {
@@ -192,129 +221,146 @@ function Main() {
           style={styles.app}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* header */}
-          <View style={styles.header}>
-            <Text style={styles.logo}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
-            {isPro ? (
-              <TouchableOpacity onPress={() => setStoreOpen(true)} style={[styles.pill, styles.pillPro]}>
-                <Text style={styles.pillProText}>Pro ✓</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={openPaywall} style={styles.pill}>
-                <Text style={styles.pillText}>Unlock all</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <Text style={styles.hero} numberOfLines={1} adjustsFontSizeToFit>
-            Say {active.noIt ? '' : 'it '}<Text style={{ color: active.a }}>{active.word}</Text>.
-          </Text>
-
-          {/* conversation */}
-          <ScrollView
-            ref={threadRef}
-            style={styles.thread}
-            contentContainerStyle={styles.threadContent}
-            onContentSizeChange={scrollToEnd}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <View
+            style={[styles.column, compact && styles.columnCompact, L.tablet && styles.columnTablet]}
+            onLayout={(e) => setAreaH(Math.round(e.nativeEvent.layout.height))}
           >
-            {!original && !loading ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyTitle}>Type what you want to say,</Text>
-                <Text style={styles.emptyTitle}>then tap a tone.</Text>
-                <Text style={styles.emptySub}>Your rewrite shows up here, ready to copy.</Text>
-              </View>
-            ) : (
-              <>
-                <Text style={styles.chip}>{active.emoji}  {active.label.toUpperCase()}</Text>
-                <View style={styles.origBubble}>
-                  <Text style={styles.origText}>{original}</Text>
+            {/* header */}
+            <View style={styles.header}>
+              <Text style={[styles.logo, { fontSize: 22 * L.k }]}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
+              {isPro ? (
+                <TouchableOpacity onPress={() => setStoreOpen(true)} style={[styles.pill, styles.pillPro]}>
+                  <Text style={styles.pillProText}>Pro ✓</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={openPaywall} style={styles.pill}>
+                  <Text style={styles.pillText}>Unlock all</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {!tight && (
+              <Text style={[styles.hero, { fontSize: (compact ? 24 : 30) * L.k }]} numberOfLines={1} adjustsFontSizeToFit>
+                Say {active.noIt ? '' : 'it '}<Text style={{ color: active.a }}>{active.word}</Text>.
+              </Text>
+            )}
+
+            {/* conversation */}
+            <ScrollView
+              ref={threadRef}
+              style={styles.thread}
+              contentContainerStyle={styles.threadContent}
+              onContentSizeChange={scrollToEnd}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {!original && !loading ? (
+                <View style={styles.empty}>
+                  <Text style={[styles.emptyTitle, { fontSize: 17 * L.k }]}>Type what you want to say,</Text>
+                  <Text style={[styles.emptyTitle, { fontSize: 17 * L.k }]}>then tap a tone.</Text>
+                  <Text style={[styles.emptySub, { fontSize: 14 * L.k }]}>Your rewrite shows up here, ready to copy.</Text>
                 </View>
-                {loading ? (
-                  <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.typing}>
-                    <TypingDots />
-                  </LinearGradient>
-                ) : result ? (
-                  <>
-                    <Animated.View style={{ alignSelf: 'flex-end', maxWidth: '86%', transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: pop }}>
-                      <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.outBubble}>
-                        <Text style={styles.outText} selectable>{result}</Text>
-                      </LinearGradient>
-                    </Animated.View>
-                    <View style={styles.actions}>
-                      <Text style={styles.status}>Ready to send</Text>
-                      <TouchableOpacity onPress={onCopy} style={[styles.copy, copied && styles.copyDone]}>
-                        <Text style={styles.copyText}>{copied ? 'COPIED ✓' : 'COPY'}</Text>
-                      </TouchableOpacity>
-                    </View>
-                    {confirming && (
-                      <View style={styles.confirm}>
-                        <Text style={styles.confirmText}><Text style={{ fontFamily: F.bold }}>You sure? 🔥</Text> This one might start a fire.</Text>
-                        <View style={styles.confirmRow}>
-                          <TouchableOpacity style={styles.confirmBtn} onPress={() => setConfirming(false)}>
-                            <Text style={styles.confirmBtnText}>Cool off</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={[styles.confirmBtn, styles.danger]} onPress={doCopy}>
-                            <Text style={[styles.confirmBtnText, { color: INK }]}>Copy it</Text>
-                          </TouchableOpacity>
-                        </View>
+              ) : (
+                <>
+                  <Text style={styles.chip}>{active.emoji}  {active.label.toUpperCase()}</Text>
+                  <View style={styles.origBubble}>
+                    <Text style={[styles.origText, L.tablet && { fontSize: 16, lineHeight: 22 }]}>{original}</Text>
+                  </View>
+                  {loading ? (
+                    <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.typing}>
+                      <TypingDots />
+                    </LinearGradient>
+                  ) : result ? (
+                    <>
+                      <Animated.View style={{ alignSelf: 'flex-end', maxWidth: '86%', transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: pop }}>
+                        <LinearGradient colors={[active.a, active.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.outBubble}>
+                          <Text style={[styles.outText, L.tablet && { fontSize: 18, lineHeight: 25 }]} selectable>{result}</Text>
+                        </LinearGradient>
+                      </Animated.View>
+                      <View style={styles.actions}>
+                        <Text style={styles.status}>Ready to send</Text>
+                        <TouchableOpacity onPress={onCopy} style={[styles.copy, copied && styles.copyDone]}>
+                          <Text style={styles.copyText}>{copied ? 'COPIED ✓' : 'COPY'}</Text>
+                        </TouchableOpacity>
                       </View>
-                    )}
-                  </>
-                ) : null}
-              </>
-            )}
-            {!!error && <Text style={styles.error}>{error}</Text>}
-          </ScrollView>
+                      {confirming && (
+                        <View style={styles.confirm}>
+                          <Text style={styles.confirmText}><Text style={{ fontFamily: F.bold }}>You sure? 🔥</Text> This one might start a fire.</Text>
+                          <View style={styles.confirmRow}>
+                            <TouchableOpacity style={styles.confirmBtn} onPress={() => setConfirming(false)}>
+                              <Text style={styles.confirmBtnText}>Cool off</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.confirmBtn, styles.danger]} onPress={doCopy}>
+                              <Text style={[styles.confirmBtnText, { color: INK }]}>Copy it</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  ) : null}
+                </>
+              )}
+              {!!error && <Text style={styles.error}>{error}</Text>}
+            </ScrollView>
 
-          {/* tone strip */}
-          <View style={styles.stripHead}>
-            {left ? (
-              <TouchableOpacity onPress={() => setStoreOpen(true)} hitSlop={8}>
-                <Text style={styles.stripLabel}>
-                  {left.today} LEFT TODAY{left.credits ? ` + ${left.credits}` : ''}  ·  <Text style={{ color: active.a }}>GET MORE</Text>
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.stripLabel}>TAP A TONE</Text>
-            )}
-            <Text style={styles.stripLabel}>SWIPE →</Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.strip}
-            contentContainerStyle={styles.stripContent}
-            keyboardShouldPersistTaps="always"
-          >
-            {COLUMNS.map((col, ci) => (
-              <View key={ci} style={styles.col}>
-                {col.map((t) => (
-                  <ToneTile key={t.id} tone={t} active={t.id === active.id}
+            {/* tone strip */}
+            <View style={styles.stripHead}>
+              {left ? (
+                <TouchableOpacity onPress={() => setStoreOpen(true)} hitSlop={8}>
+                  <Text style={styles.stripLabel}>
+                    {left.today} LEFT TODAY{left.credits ? ` + ${left.credits}` : ''}  ·  <Text style={{ color: active.a }}>GET MORE</Text>
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.stripLabel}>TAP A TONE</Text>
+              )}
+              {!L.grid && <Text style={styles.stripLabel}>SWIPE →</Text>}
+            </View>
+            {L.grid ? (
+              <View style={styles.grid}>
+                {TONES.map((t) => (
+                  <ToneTile key={t.id} tone={t} active={t.id === active.id} width={L.gridTileW} big={L.tablet}
                     locked={!t.free && !isPro} showFree={t.free && !isPro}
                     disabled={loading} onPress={() => rewrite(t)} />
                 ))}
               </View>
-            ))}
-          </ScrollView>
-
-          {/* composer */}
-          <View style={styles.composer}>
-            <TextInput
-              style={styles.input}
-              multiline
-              placeholder="Type it how you feel it…"
-              placeholderTextColor={MUTED}
-              value={message}
-              onChangeText={(t) => { setMessage(t.slice(0, MAX_CHARS)); if (error) setError(''); }}
-              selectionColor={active.a}
-            />
-            {!!message && (
-              <Pressable onPress={() => setMessage('')} style={styles.clear} hitSlop={8}>
-                <Text style={styles.clearText}>✕</Text>
-              </Pressable>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.strip}
+                contentContainerStyle={styles.stripContent}
+                keyboardShouldPersistTaps="always"
+              >
+                {(tight ? TONES.map((t) => [t]) : COLUMNS).map((col, ci) => (
+                  <View key={ci} style={styles.col}>
+                    {col.map((t) => (
+                      <ToneTile key={t.id} tone={t} active={t.id === active.id} slim={tight} short={compact} big={L.tablet}
+                        locked={!t.free && !isPro} showFree={t.free && !isPro}
+                        disabled={loading} onPress={() => rewrite(t)} />
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
             )}
+
+            {/* composer */}
+            <View style={styles.composer}>
+              <TextInput
+                style={[styles.input, tight && { maxHeight: 62 }, L.tablet && { fontSize: 18 }]}
+                multiline
+                placeholder="Type it how you feel it…"
+                placeholderTextColor={MUTED}
+                value={message}
+                onChangeText={(t) => { setMessage(t.slice(0, MAX_CHARS)); if (error) setError(''); }}
+                selectionColor={active.a}
+              />
+              {!!message && (
+                <Pressable onPress={() => setMessage('')} style={styles.clear} hitSlop={8}>
+                  <Text style={styles.clearText}>✕</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -331,27 +377,32 @@ function Main() {
   );
 }
 
-function ToneTile({ tone, active, locked, showFree, disabled, onPress }) {
+function ToneTile({ tone, active, locked, showFree, disabled, onPress, width, slim, short, big }) {
   const scale = useRef(new Animated.Value(1)).current;
   const pressIn = () => Animated.timing(scale, { toValue: 0.94, duration: 90, useNativeDriver: true }).start();
   const pressOut = () => Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+  // slim: one-line tile (emoji beside the name) for when the keyboard leaves little room.
+  const size = [
+    width ? { width } : big ? { width: 136 } : null,
+    slim ? styles.tileSlim : short ? { height: 52, paddingVertical: 6 } : big ? { height: 64 } : null,
+  ];
   const inner = (
     <>
-      <Text style={[styles.tileEmoji, locked && { opacity: 0.5 }]}>{tone.emoji}</Text>
-      <Text style={[styles.tileName, active && { color: INK }, locked && { color: MUTED }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{tone.label}</Text>
-      {showFree && <View style={[styles.tag, styles.tagFree]}><Text style={styles.tagFreeText}>FREE</Text></View>}
-      {locked && <View style={[styles.tag, styles.tagLock]}><Text style={styles.tagLockText}>PRO</Text></View>}
+      <Text style={[styles.tileEmoji, slim && styles.tileEmojiSlim, locked && { opacity: 0.5 }]}>{tone.emoji}</Text>
+      <Text style={[styles.tileName, big && { fontSize: 14 }, active && { color: INK }, locked && { color: MUTED }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{tone.label}</Text>
+      {showFree && <View style={[styles.tag, slim && styles.tagSlim, styles.tagFree]}><Text style={styles.tagFreeText}>FREE</Text></View>}
+      {locked && <View style={[styles.tag, slim && styles.tagSlim, styles.tagLock]}><Text style={styles.tagLockText}>PRO</Text></View>}
     </>
   );
   return (
     <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={disabled}>
       <Animated.View style={{ transform: [{ scale }] }}>
         {active ? (
-          <LinearGradient colors={[tone.a, tone.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, styles.tileActive]}>
+          <LinearGradient colors={[tone.a, tone.b]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, ...size, styles.tileActive]}>
             {inner}
           </LinearGradient>
         ) : (
-          <View style={styles.tile}>{inner}</View>
+          <View style={[styles.tile, ...size]}>{inner}</View>
         )}
       </Animated.View>
     </Pressable>
@@ -383,7 +434,10 @@ function TypingDots() {
 }
 
 const styles = StyleSheet.create({
-  app: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 12 },
+  app: { flex: 1 },
+  column: { flex: 1, width: '100%', maxWidth: COLUMN_MAX, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 12 },
+  columnCompact: { gap: 8, paddingTop: 4 },
+  columnTablet: { paddingTop: 16, paddingBottom: 16 },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logo: { fontFamily: F.black, fontSize: 22, color: TEXT, letterSpacing: -0.8 },
@@ -430,14 +484,18 @@ const styles = StyleSheet.create({
   strip: { flexGrow: 0, marginHorizontal: -16 },
   stripContent: { paddingHorizontal: 16, gap: 8 },
   col: { gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
     width: 120, height: 58, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8,
     justifyContent: 'space-between', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE,
   },
   tileActive: { borderColor: 'transparent' },
-  tileEmoji: { fontSize: 20, lineHeight: 24 },
+  tileSlim: { width: 'auto', paddingHorizontal: 12, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 6, paddingVertical: 0 },
+  tileEmojiSlim: { fontSize: 16, lineHeight: 20 },
+  tileEmoji: { fontSize: 20, lineHeight: 23 },
   tileName: { fontFamily: F.bold, fontSize: 12.5, color: TEXT },
   tag: { position: 'absolute', top: 7, right: 7, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
+  tagSlim: { position: 'relative', top: 0, right: 0 },
   tagFree: { backgroundColor: TEXT },
   tagFreeText: { fontFamily: F.bold, fontSize: 8, letterSpacing: 0.8, color: INK },
   tagLock: { backgroundColor: 'rgba(0,0,0,0.35)' },
