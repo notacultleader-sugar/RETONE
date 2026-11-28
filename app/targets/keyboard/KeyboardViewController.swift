@@ -602,10 +602,10 @@ final class GlowView: UIView {
 final class MoodPage: UIView {
   private let emoji = UILabel()
   private let title = UILabel()
-  private let tag = UILabel()
+  private let proTag = UILabel()
   private let tone: Tone
   var inset: CGFloat = 26 { didSet { setNeedsLayout() } }
-  var locked = false { didSet { tag.isHidden = !locked; title.alpha = locked ? 0.6 : 1; setNeedsLayout() } }
+  var locked = false { didSet { proTag.isHidden = !locked; title.alpha = locked ? 0.6 : 1; setNeedsLayout() } }
   var busy = false { didSet { title.text = busy ? "Rewriting \(tone.label.lowercased())…" : tone.headline; setNeedsLayout() } }
 
   init(tone: Tone) {
@@ -620,14 +620,14 @@ final class MoodPage: UIView {
     title.minimumScaleFactor = 0.7
     let base = UIFont.systemFont(ofSize: 18, weight: .heavy)
     title.font = base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: 18) } ?? base
-    tag.text = " PRO 🔒 "
-    tag.font = .systemFont(ofSize: 10, weight: .bold)
-    tag.textColor = MUTED
-    tag.backgroundColor = UIColor.black.withAlphaComponent(0.35)
-    tag.layer.cornerRadius = 5
-    tag.clipsToBounds = true
-    tag.isHidden = true
-    [emoji, title, tag].forEach(addSubview)
+    proTag.text = " PRO 🔒 "
+    proTag.font = .systemFont(ofSize: 10, weight: .bold)
+    proTag.textColor = MUTED
+    proTag.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+    proTag.layer.cornerRadius = 5
+    proTag.clipsToBounds = true
+    proTag.isHidden = true
+    [emoji, title, proTag].forEach(addSubview)
     isAccessibilityElement = true
     accessibilityLabel = "\(tone.label). Double-tap to rewrite. Swipe for other moods."
   }
@@ -636,14 +636,14 @@ final class MoodPage: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     let h = bounds.height
-    let tagW: CGFloat = tag.isHidden ? 0 : 64
+    let tagW: CGFloat = proTag.isHidden ? 0 : 64
     let maxW = bounds.width - inset * 2 - 40
     let textW = min(title.intrinsicContentSize.width, maxW - 30 - tagW)
     let total = 30 + textW + (tagW > 0 ? tagW + 6 : 0)
     var x = (bounds.width - total) / 2
     emoji.frame = CGRect(x: x, y: 0, width: 30, height: h); x += 30
     title.frame = CGRect(x: x, y: 0, width: textW, height: h); x += textW + 6
-    tag.frame = CGRect(x: x, y: (h - 18) / 2, width: tagW, height: 18)
+    proTag.frame = CGRect(x: x, y: (h - 18) / 2, width: tagW, height: 18)
   }
 
   func nudge() {
