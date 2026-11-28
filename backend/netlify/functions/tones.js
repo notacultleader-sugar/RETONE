@@ -55,8 +55,8 @@ module.exports = {
     free: false,
     prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.',
   },
-  irish: {
+  shakespeare: {
     free: false,
-    prompt: 'Translate it into Irish (Gaeilge), the language. Use natural, everyday modern Irish (An Caighdeán Oifigiúil spelling, with all the fadas) that a fluent speaker would actually text. Keep the meaning and the casualness. Write the whole reply in Irish only, with no English and no translation notes.',
+    prompt: 'Rewrite it in the voice of a Shakespeare play: thee, thou, thy, art, doth, hath, prithee, dramatic flair and flowery insults or compliments where they fit. Keep the meaning clear and easy to follow, and keep it text-message length.',
   },
 };
