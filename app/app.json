@@ -27,7 +27,9 @@
     },
     "android": {
       "package": "ca.notacult.apps.saytwice",
-      "permissions": [],
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#07070c"
@@ -38,7 +40,25 @@
       "expo-splash-screen",
       "expo-font",
       "./plugins/withReleaseSigning",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Saytwice uses this to show ads that are more relevant to you. Saying no still shows ads, just less relevant ones."
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "delayAppMeasurementInit": true,
+          "userTrackingUsageDescription": "Saytwice uses this to show ads that are more relevant to you. Saying no still shows ads, just less relevant ones.",
+          "skAdNetworkItems": [
+            "cstr6suwn9.skadnetwork"
+          ]
+        }
+      ]
     ]
   }
 }

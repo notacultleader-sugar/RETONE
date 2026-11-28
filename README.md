@@ -9,9 +9,9 @@ Type a message → tap a tone → copy the rewrite. Native iPhone + Android app 
 
 | | Price | Rewrites |
 |---|---|---|
-| Free | $0 | 5 a day, free tones only |
-| Pro monthly | $1.99 / month | 50 a day, all tones |
-| Pro yearly | $9.99 / year | 50 a day, all tones |
+| Free | $0 | 5 a day, free tones only, with ads |
+| Pro monthly | $1.99 / month | 50 a day, all tones, no ads |
+| Pro yearly | $9.99 / year | 50 a day, all tones, no ads |
 | Top-up packs | $0.99 / $1.99 / $4.99 | +50 / +150 / +500, never expire |
 
 Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then opens the **store**.
@@ -122,12 +122,29 @@ One-time setup:
 
 The app icon is `app/assets/icon.png` (and `adaptive-icon.png` for Android); replace them to change it.
 
+## Step 5b: Ads in the free version (Google AdMob)
+
+Free users see one full-screen ad every 2nd rewrite (never the first). It plays while the AI writes, so it adds no waiting, and video ads can be skipped after about 5 seconds. Pro users never see ads. The code is in `app/ads.js`; change how often with `ADS_EVERY` in `app/config.js`.
+
+Until your own ids are in, the app shows Google's **test ads**, which pay nothing. To switch to real ads:
+
+1. Make an AdMob account at https://admob.google.com and add the app twice (iOS and Android).
+2. Put each app's **App ID** (has a `~`) in `app/app.json`, under `react-native-google-mobile-ads`: `iosAppId` and `androidAppId`.
+3. In each app make an **Interstitial** ad unit, and put its **ad unit ID** (has a `/`) in `app/config.js` as `AD_UNIT_IOS` and `AD_UNIT_ANDROID`.
+4. In AdMob, **Privacy & messaging**, create a **European regulations** message (GDPR). The app shows it only where the law requires.
+5. Add an `app-ads.txt` file to your website with the line AdMob gives you (Apps → app-ads.txt), and put that website in both store listings.
+
+Before any ad, the app asks for consent where required, and on iPhone shows Apple's "Allow tracking?" prompt. Saying no still shows ads, just not personalised.
+
+Never tap your own real ads; AdMob can close the account for it. Test with the test ads.
+
 ## Step 6: Ship it
 
 From TestFlight / internal testing, submit for review in App Store Connect and Play Console.
 
 **Before submitting:**
-- A privacy policy page (messages are sent to Anthropic's Claude AI to be rewritten; say so)
+- A privacy policy page (messages are sent to Anthropic's Claude AI to be rewritten; say so). Also say the free version shows ads from Google AdMob, which may use the device's advertising ID.
+- Ads in the store forms: App Store **App Privacy** answers must include *Device ID* and *Advertising data* collected for **Third-party advertising**, with tracking = yes (because of the ATT prompt). Google Play: answer **Contains ads = Yes**, and in **Data safety** and the **Advertising ID** form say the app uses the advertising ID for advertising.
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
 - Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
 

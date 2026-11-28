@@ -17,6 +17,7 @@ import { ExtensionStorage } from '@bacons/apple-targets';
 
 import MoodBackground from './MoodBackground';
 import Store from './Store';
+import { startAds, adForRewrite } from './ads';
 import { TONES } from './tones';
 import {
   API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT,
@@ -118,6 +119,7 @@ function Main() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isPro, setIsPro] = useState(false);
+  const [proKnown, setProKnown] = useState(false); // ads wait until we know they're not Pro
   const [userId, setUserId] = useState(null);
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -138,14 +140,19 @@ function Main() {
         apiKey: Platform.OS === 'ios' ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY,
       });
       Purchases.getAppUserID().then(setUserId).catch(() => {});
-      Purchases.getCustomerInfo().then((info) => setIsPro(hasPro(info))).catch(() => {});
+      Purchases.getCustomerInfo().then((info) => setIsPro(hasPro(info))).catch(() => {})
+        .finally(() => setProKnown(true));
       const listener = (info) => setIsPro(hasPro(info));
       Purchases.addCustomerInfoUpdateListener(listener);
       return () => Purchases.removeCustomerInfoUpdateListener(listener);
     } catch (e) {
       console.warn('RevenueCat not configured:', e?.message);
+      setProKnown(true);
     }
   }, []);
+
+  // --- Ads (free version only) --------------------------------------------
+  useEffect(() => { if (proKnown && !isPro) startAds(); }, [proKnown, isPro]);
 
   const openPaywall = useCallback(async () => {
     try {
@@ -192,6 +199,8 @@ function Main() {
     }
 
     Haptics.selectionAsync().catch(() => {});
+    // Free users: every few rewrites a full-screen ad plays while the AI writes (none if they're out of rewrites).
+    if (!isPro && proKnown && !(left && left.today <= 0 && left.credits <= 0)) adForRewrite();
     setActive(tone);
     setOriginal(message.trim());
     setLoading(true);
@@ -225,7 +234,7 @@ function Main() {
     } finally {
       setLoading(false);
     }
-  }, [message, isPro, userId, openPaywall, loading, pop]);
+  }, [message, isPro, proKnown, left, userId, openPaywall, loading, pop]);
 
   // --- Copy ------------------------------------------------------------
   const doCopy = useCallback(async () => {
