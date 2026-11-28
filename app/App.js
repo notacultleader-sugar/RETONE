@@ -56,17 +56,24 @@ const COLUMNS = TONES.reduce((cols, t, i) => {
 //    the headline hides and the tones become one swipeable row, so the conversation stays visible.
 const TABLET_MIN_SIDE = 600; // dp; iPad mini is 744, the biggest phones are ~440
 const COLUMN_MAX = 640;
-function layoutFor(winW, winH, areaH) {
+function layoutFor(winW, winH, areaH, areaW) {
   const tablet = Math.min(winW, winH) >= TABLET_MIN_SIDE;
   const fit = areaH < 480 ? 'tight' : areaH < 620 ? 'compact' : 'roomy';
-  const colW = Math.min(winW, COLUMN_MAX) - 32;
+  const colW = Math.min(areaW, COLUMN_MAX) - 32; // usable width inside the 16dp side padding
   const perRow = Math.floor((colW + 8) / (128 + 8));
   // Grid shows every tone with no swiping: only when there's width for 4+ per row and height to spare.
   const rows = Math.ceil(TONES.length / Math.max(perRow, 1));
   const grid = perRow >= 4 && fit === 'roomy' && areaH - rows * 66 >= 420;
+  // Swipe strip: size tiles so a whole number of them fills the width, so no tile is ever cut off
+  // at the screen edge. Two-line tiles need ~104dp, one-line (slim) tiles with a FREE/PRO tag ~140dp.
+  const fitTiles = (min) => {
+    const n = Math.max(1, Math.floor((colW + 8) / (min + 8)));
+    return Math.floor((colW - (n - 1) * 8) / n);
+  };
   return {
     tablet, fit, grid,
     gridTileW: grid ? Math.floor((colW - (perRow - 1) * 8) / perRow) : 0,
+    stripTileW: fitTiles(fit === 'tight' ? 140 : tablet ? 128 : 104),
     k: tablet ? 1.15 : winW < 360 ? 0.92 : 1, // type scale
   };
 }
@@ -100,8 +107,8 @@ function Main() {
   const threadRef = useRef(null);
   const pop = useRef(new Animated.Value(1)).current;
   const { width: winW, height: winH } = useWindowDimensions();
-  const [areaH, setAreaH] = useState(winH);
-  const L = layoutFor(winW, winH, areaH);
+  const [area, setArea] = useState({ w: winW, h: winH });
+  const L = layoutFor(winW, winH, area.h, area.w);
   const tight = L.fit === 'tight';
   const compact = L.fit !== 'roomy';
 
@@ -223,7 +230,10 @@ function Main() {
         >
           <View
             style={[styles.column, compact && styles.columnCompact, L.tablet && styles.columnTablet]}
-            onLayout={(e) => setAreaH(Math.round(e.nativeEvent.layout.height))}
+            onLayout={(e) => {
+              const { width: w, height: h } = e.nativeEvent.layout;
+              setArea((a) => (Math.round(w) === a.w && Math.round(h) === a.h ? a : { w: Math.round(w), h: Math.round(h) }));
+            }}
           >
             {/* header */}
             <View style={styles.header}>
@@ -330,12 +340,14 @@ function Main() {
                 showsHorizontalScrollIndicator={false}
                 style={styles.strip}
                 contentContainerStyle={styles.stripContent}
+                snapToInterval={L.stripTileW + 8}
+                decelerationRate="fast"
                 keyboardShouldPersistTaps="always"
               >
                 {(tight ? TONES.map((t) => [t]) : COLUMNS).map((col, ci) => (
                   <View key={ci} style={styles.col}>
                     {col.map((t) => (
-                      <ToneTile key={t.id} tone={t} active={t.id === active.id} slim={tight} short={compact} big={L.tablet}
+                      <ToneTile key={t.id} tone={t} active={t.id === active.id} width={L.stripTileW} slim={tight} short={compact} big={L.tablet}
                         locked={!t.free && !isPro} showFree={t.free && !isPro}
                         disabled={loading} onPress={() => rewrite(t)} />
                     ))}
@@ -481,8 +493,9 @@ const styles = StyleSheet.create({
 
   stripHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: -4 },
   stripLabel: { fontFamily: F.bold, fontSize: 11, letterSpacing: 1.6, color: MUTED },
-  strip: { flexGrow: 0, marginHorizontal: -16 },
-  stripContent: { paddingHorizontal: 16, gap: 8 },
+  // The strip stays inside the side padding, so tiles are never shown cut off at the screen edge.
+  strip: { flexGrow: 0 },
+  stripContent: { gap: 8 },
   col: { gap: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
@@ -490,7 +503,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE,
   },
   tileActive: { borderColor: 'transparent' },
-  tileSlim: { width: 'auto', paddingHorizontal: 12, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 6, paddingVertical: 0 },
+  tileSlim: { paddingHorizontal: 12, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 6, paddingVertical: 0 },
   tileEmojiSlim: { fontSize: 16, lineHeight: 20 },
   tileEmoji: { fontSize: 20, lineHeight: 23 },
   tileName: { fontFamily: F.bold, fontSize: 12.5, color: TEXT },

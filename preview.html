@@ -18,6 +18,7 @@
   --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: dark;
 }
+[hidden] { display: none !important; }
 html { height: 100%; box-sizing: border-box; background: var(--void); }
 body { height: 100%; overflow: hidden; background: var(--void); color: var(--text); font-family: var(--body); font-size: 16px; }
 
@@ -45,7 +46,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .logo { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.8px; margin: 0; line-height: 1; text-transform: uppercase; }
 .grad { color: transparent; background: linear-gradient(100deg, var(--mood-a), var(--mood-b)); -webkit-background-clip: text; background-clip: text; }
 .pill { font: 700 13px var(--body); color: var(--void); background: var(--text); border: 0; border-radius: 999px; padding: 8px 13px; cursor: pointer; }
-.pill.pro { background: var(--glass); color: var(--text); border: 1px solid var(--edge); cursor: default; }
+.pill.pro { background: var(--glass); color: var(--text); border: 1px solid var(--edge); }
 .hero { flex: none; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 7.4vw, 32px); line-height: 1.05; letter-spacing: -1px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* conversation */
@@ -80,15 +81,16 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .err { align-self: center; text-align: center; color: #ffb4a3; font-size: 13px; }
 
 /* tone strip */
-.strip-head { flex: none; display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-bottom: -4px; }
+.strip-head { flex: none; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-bottom: -4px; }
+.left-btn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.left-btn b { color: var(--mood-a); font-weight: 800; }
 .tones {
-  flex: none; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 58px); grid-auto-columns: 120px; gap: 8px;
-  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
-  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
-  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
-          mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);
+  flex: none; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 58px); gap: 8px;
+  /* Whole tiles only: 3 columns fill the width exactly (2 on very narrow phones), never a tile cut off at the edge. */
+  grid-auto-columns: calc((100% - 16px) / 3);
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
 }
+@media (max-width: 339px) { .tones { grid-auto-columns: calc((100% - 8px) / 2); } }
 .tones::-webkit-scrollbar { display: none; }
 .tone {
   position: relative; scroll-snap-align: start;
@@ -121,7 +123,7 @@ textarea::placeholder { color: var(--muted); }
 .clear { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: var(--muted); font-size: 16px; cursor: pointer; }
 button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
-/* paywall */
+/* sheets (Pro paywall + credit store) */
 .scrim { position: fixed; inset: 0; background: rgba(3,3,8,.72); z-index: 20; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-width: 440px; margin: 0 auto; overflow: hidden;
@@ -130,19 +132,36 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
   display: flex; flex-direction: column; gap: 14px; animation: up .3s cubic-bezier(.2,1.2,.4,1);
 }
-.sheet::before { content: ""; position: absolute; inset: -40% -20% auto; height: 260px; background: conic-gradient(from 90deg, #ff4d6d, #ffb347, #3fc8ff, #9b6bff, #ff4d6d); filter: blur(70px); opacity: .45; animation: spin 10s linear infinite; }
+#sheet::before { content: ""; position: absolute; inset: -40% -20% auto; height: 260px; background: conic-gradient(from 90deg, #ff4d6d, #ffb347, #3fc8ff, #9b6bff, #ff4d6d); filter: blur(70px); opacity: .45; animation: spin 10s linear infinite; }
+#store::before { content: ""; position: absolute; inset: -50% -20% auto; height: 240px; background: radial-gradient(circle, var(--mood-a), transparent 65%); filter: blur(50px); opacity: .4; }
 .sheet > * { position: relative; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes up { from { transform: translateY(60px); } }
 .sheet h2 { font-family: var(--display); font-weight: 900; font-size: 28px; line-height: 1.02; letter-spacing: -1px; margin: 0; text-transform: uppercase; }
-.sheet p { margin: 0; color: var(--muted); }
+.sheet p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips span { font-size: 12.5px; background: rgba(255,255,255,.07); border: 1px solid var(--edge); border-radius: 999px; padding: 5px 9px; }
-.price { font-family: var(--display); font-weight: 800; font-size: 22px; }
-.price small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); }
+.plans { display: flex; flex-direction: column; gap: 8px; }
+.plan { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1.5px solid var(--edge); border-radius: 16px; padding: 12px 14px; color: var(--text); font: 15px var(--body); }
+.plan.sel { border-color: var(--text); background: rgba(255,255,255,.12); }
+.plan b { font-weight: 700; }
+.plan small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.plan .amt { font-family: var(--display); font-weight: 800; font-size: 17px; white-space: nowrap; text-align: right; }
+.plan .amt small { font-family: var(--body); font-weight: 500; }
 .buy { width: 100%; border: 0; border-radius: 18px; padding: 16px; cursor: pointer; font: 800 15px var(--display); letter-spacing: .5px; text-transform: uppercase; background: var(--text); color: var(--void); }
 .sheet-links { display: flex; justify-content: space-between; }
 .link { background: none; border: 0; color: var(--muted); font: 13px var(--body); cursor: pointer; padding: 4px 0; }
+.link.strong { color: var(--text); font-weight: 700; text-decoration: underline; }
+.packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+.pack { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1.5px solid var(--edge); border-radius: 18px; padding: 20px 6px 10px; color: var(--text); font: inherit; }
+.pack.best { border-color: var(--mood-a); }
+.pack .badge { position: absolute; top: -9px; background: var(--mood-a); color: #0b0b12; font-size: 9px; font-weight: 800; letter-spacing: .8px; border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+.pack .n { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.8px; }
+.pack .u { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.pack .p { align-self: stretch; background: var(--text); color: var(--void); border-radius: 999px; padding: 7px 0; font-weight: 700; font-size: 14px; }
+.note { text-align: center; font-size: 11px !important; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 </style>
@@ -156,7 +175,7 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
     <button class="pill" id="unlockBtn" type="button">Unlock all</button>
   </header>
 
-  <p class="hero">Say it <span class="grad" id="heroWord">calmer</span>.</p>
+  <p class="hero">Say <span id="heroIt">it </span><span class="grad" id="heroWord">calmer</span>.</p>
 
   <section class="thread" id="thread" aria-live="polite">
     <div class="spacer"></div>
@@ -177,7 +196,10 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
     <div class="err" id="err" hidden></div>
   </section>
 
-  <div class="strip-head"><span>Tap a tone</span><span>Swipe →</span></div>
+  <div class="strip-head">
+    <button class="left-btn" id="leftBtn" type="button"><span id="leftText">5 left today</span> · <b>Get more</b></button>
+    <span>Swipe →</span>
+  </div>
   <div class="tones" id="tones"></div>
 
   <div class="composer">
@@ -188,16 +210,38 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
+
+<!-- Pro paywall -->
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="pwTitle" hidden>
-  <h2 id="pwTitle">Every tone.<br>Forever.</h2>
+  <h2 id="pwTitle">Every tone.<br>50 a day.</h2>
   <p>Say it exactly how you mean it.</p>
   <div class="chips" id="pwChips"></div>
-  <div class="price">$4.99 <small>one-time · preview, nothing is charged</small></div>
-  <button class="buy" id="buyBtn" type="button">Unlock all tones</button>
+  <div class="plans" id="plans">
+    <button class="plan" type="button" data-plan="monthly"><span><b>Monthly</b><small>Cancel any time</small></span><span class="amt">$1.99<small>/month</small></span></button>
+    <button class="plan sel" type="button" data-plan="yearly"><span><b>Yearly</b><small>Best for most people</small></span><span class="amt">$9.99<small>/year</small></span></button>
+  </div>
+  <button class="buy" id="buyBtn" type="button">Go Pro</button>
   <div class="sheet-links">
     <button class="link" id="closeSheet" type="button">Not now</button>
     <button class="link" id="restoreBtn" type="button">Restore purchases</button>
   </div>
+  <p class="note">Preview only: nothing is charged.</p>
+</div>
+
+<!-- Credit store -->
+<div class="sheet" id="store" role="dialog" aria-modal="true" aria-labelledby="storeTitle" hidden>
+  <h2 id="storeTitle">Get more<br>rewrites</h2>
+  <p id="storeSub"></p>
+  <div class="packs">
+    <button class="pack" type="button" data-n="50"><span class="n">+50</span><span class="u">rewrites</span><span class="p">$0.99</span></button>
+    <button class="pack" type="button" data-n="150"><span class="n">+150</span><span class="u">rewrites</span><span class="p">$1.99</span></button>
+    <button class="pack best" type="button" data-n="500"><span class="badge">BEST VALUE</span><span class="n">+500</span><span class="u">rewrites</span><span class="p">$4.99</span></button>
+  </div>
+  <div class="sheet-links">
+    <button class="link" id="closeStore" type="button">Not now</button>
+    <button class="link strong" id="storePro" type="button">Or go Pro: every tone, 50 a day</button>
+  </div>
+  <p class="note">Preview only: nothing is charged.</p>
 </div>
 
 <script>
@@ -206,7 +250,7 @@ const TONES = [
   { id: 'professional', label: 'Professional', word: 'pro', emoji: '💼', free: true, a: '#9fb4d9', b: '#4d6bff', prompt: 'Rewrite it to sound polished and professional, like a message to a boss, client or coworker.' },
   { id: 'kinder', label: 'Kinder', word: 'kinder', emoji: '💛', a: '#ffd84d', b: '#ff9f43', prompt: 'Rewrite it to sound warm, caring and kind, without being fake or over the top.' },
   { id: 'firmer', label: 'Firmer', word: 'firmer', emoji: '🪨', a: '#c9c3b6', b: '#7d7aa8', prompt: 'Rewrite it to sound firm and clear, setting a boundary respectfully. No apologising for the point itself.' },
-  { id: 'apologetic', label: 'Apologetic', word: 'sorry', emoji: '🙏', a: '#b8a4ff', b: '#7fd1ff', prompt: 'Rewrite it as a sincere apology that takes responsibility without grovelling.' },
+  { id: 'apologetic', label: 'Apologetic', word: 'sorry', noIt: true, emoji: '🙏', a: '#b8a4ff', b: '#7fd1ff', prompt: 'Rewrite it as a sincere apology that takes responsibility without grovelling.' },
   { id: 'funnier', label: 'Funnier', word: 'funnier', emoji: '😂', a: '#b6ff4d', b: '#25d9c5', prompt: 'Rewrite it to be funny and lighthearted while still getting the point across.' },
   { id: 'confident', label: 'Confident', word: 'bolder', emoji: '😎', a: '#ffb347', b: '#ff4d8b', prompt: 'Rewrite it to sound confident and self-assured. Remove hedging like "sorry", "just", "maybe".' },
   { id: 'shorter', label: 'Shorter', word: 'shorter', emoji: '✂️', a: '#e8e8f0', b: '#8f8fa8', prompt: 'Rewrite it as short as possible while keeping the meaning. Text-message length.' },
@@ -214,13 +258,15 @@ const TONES = [
   { id: 'spicy', label: 'Spicy', word: 'spicier', emoji: '🌶️', a: '#ff3d6e', b: '#a3195b', prompt: 'Rewrite it to be suggestive and steamy for a romantic partner, using innuendo and teasing. Keep it tasteful: no explicit sexual descriptions.' },
   { id: 'angrier', label: 'Fired Up', word: 'louder', emoji: '🔥', confirm: true, a: '#ff5a1f', b: '#ff1f3d', prompt: 'Rewrite it to sound noticeably more frustrated and fired up, so the reader knows the sender is upset. No slurs, threats or personal attacks on appearance or identity.' },
   { id: 'passive', label: 'Passive-Aggro', word: 'sweeter', emoji: '🙂', a: '#ffe066', b: '#ff6b9d', prompt: 'Rewrite it in an over-the-top passive-aggressive tone, sweet on the surface with obvious shade underneath. Play it for laughs.' },
-  { id: 'pirate', label: 'Pirate', word: 'pirate', emoji: '🏴‍☠️', a: '#2bd4a8', b: '#1b6f8f', prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.' },
+  { id: 'pirate', label: 'Pirate', word: 'ahoy matey-er', emoji: '🏴‍☠️', a: '#2bd4a8', b: '#1b6f8f', prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.' },
 ];
 const SYSTEM = 'You rewrite text messages in a requested tone. Keep the original meaning, facts and intent. Do not add new information or promises. Write it as the sender, in first person, ready to paste into a text. Match the casualness of a text message unless the tone says otherwise. Return ONLY the rewritten message. No quotes, no explanations, no options. If the message asks for something harmful (threats, harassment, illegal acts), reply exactly: Sorry, I can\'t rewrite that one.';
+const FREE_DAILY = 5, PRO_DAILY = 50;
 
 const $ = (id) => document.getElementById(id);
 const root = document.documentElement;
 let isPro = false, active = 'calmer', busy = false, pendingTone = null, ctrl = null;
+let today = FREE_DAILY, credits = 0, plan = 'yearly';
 let samplePromise = null;
 const getSample = () => (samplePromise ??= (window.claude?.use ? window.claude.use('sample') : Promise.resolve(null)));
 
@@ -228,6 +274,22 @@ function setMood(t) {
   root.style.setProperty('--mood-a', t.a);
   root.style.setProperty('--mood-b', t.b);
   $('heroWord').textContent = t.word;
+  $('heroIt').textContent = t.noIt ? '' : 'it ';
+  fitHero();
+}
+
+// Shrink the headline to fit one line, like the app's adjustsFontSizeToFit.
+function fitHero() {
+  const h = document.querySelector('.hero');
+  h.style.fontSize = '';
+  let size = parseFloat(getComputedStyle(h).fontSize);
+  while (h.scrollWidth > h.clientWidth && size > 14) { size -= 1; h.style.fontSize = size + 'px'; }
+}
+addEventListener('resize', fitHero);
+document.fonts?.ready.then(fitHero);
+
+function renderLeft() {
+  $('leftText').textContent = `${today} left today${credits ? ` + ${credits}` : ''}`;
 }
 
 function renderTones() {
@@ -248,12 +310,16 @@ function renderTones() {
   }
   $('unlockBtn').textContent = isPro ? 'Pro ✓' : 'Unlock all';
   $('unlockBtn').classList.toggle('pro', isPro);
+  renderLeft();
 }
 
 function grow() { const t = $('msg'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 96) + 'px'; }
 function toBottom() { const th = $('thread'); th.scrollTop = th.scrollHeight; }
 
+function closeAll() { $('scrim').hidden = true; $('sheet').hidden = true; $('store').hidden = true; }
+
 function openSheet(tone) {
+  closeAll();
   pendingTone = tone || null;
   $('pwChips').textContent = '';
   TONES.filter((t) => !t.free).forEach((t) => {
@@ -261,7 +327,14 @@ function openSheet(tone) {
   });
   $('scrim').hidden = false; $('sheet').hidden = false; $('buyBtn').focus();
 }
-function closeSheet() { $('scrim').hidden = true; $('sheet').hidden = true; pendingTone = null; }
+function closeSheet() { closeAll(); pendingTone = null; }
+
+function openStore() {
+  closeAll();
+  $('storeSub').textContent = `${today} left today${credits ? ` + ${credits} credits` : ''}. Credits never expire and kick in after your daily ${isPro ? PRO_DAILY : FREE_DAILY}.`;
+  $('storePro').hidden = isPro;
+  $('scrim').hidden = false; $('store').hidden = false;
+}
 
 async function pick(tone) {
   if (busy) return;
@@ -269,6 +342,10 @@ async function pick(tone) {
   const message = $('msg').value.trim();
   $('err').hidden = true; $('confirm').hidden = true;
   if (!message) { showErr('Type a message first.'); $('msg').focus(); return; }
+  if (today <= 0 && credits <= 0) {
+    showErr(isPro ? `You've used today's ${PRO_DAILY} rewrites. Top up, or they refresh tomorrow.` : `You've used today's ${FREE_DAILY} free rewrites. Go Pro for ${PRO_DAILY} a day.`);
+    openStore(); return;
+  }
 
   active = tone.id; busy = true; setMood(tone); renderTones();
   $('origBubble').textContent = message;
@@ -283,6 +360,7 @@ async function pick(tone) {
     ctrl?.abort(); ctrl = new AbortController();
     const res = await sample(`${SYSTEM}\n\nTone: ${tone.prompt}\n\nMessage:\n${message}`, { modelTier: 'quick', cache: false, signal: ctrl.signal });
     $('outBubble').textContent = res.text.trim().replace(/^"|"$/g, '');
+    if (today > 0) today--; else credits--;
   } catch (e) {
     $('outBubble').textContent = message;
     if (e?.code === 'not_granted') showErr('Live rewrites need permission. Allow it when asked, or open this in the Claude app.');
@@ -319,16 +397,29 @@ $('copyBtn').addEventListener('click', () => {
 });
 $('copyAnyway').addEventListener('click', doCopy);
 $('coolOff').addEventListener('click', () => { $('confirm').hidden = true; });
-$('unlockBtn').addEventListener('click', () => { if (!isPro) openSheet(); });
+$('unlockBtn').addEventListener('click', () => { isPro ? openStore() : openSheet(); });
+$('leftBtn').addEventListener('click', openStore);
 $('restoreBtn').addEventListener('click', () => { closeSheet(); showErr('Preview: no earlier purchase found.'); });
 $('closeSheet').addEventListener('click', closeSheet);
+$('closeStore').addEventListener('click', closeAll);
+$('storePro').addEventListener('click', () => openSheet());
 $('scrim').addEventListener('click', closeSheet);
+document.querySelectorAll('.plan').forEach((b) => b.addEventListener('click', () => {
+  plan = b.dataset.plan;
+  document.querySelectorAll('.plan').forEach((x) => x.classList.toggle('sel', x === b));
+}));
 $('buyBtn').addEventListener('click', () => {
+  if (!isPro) today += PRO_DAILY - FREE_DAILY;
   isPro = true; const t = pendingTone; closeSheet(); renderTones();
+  showErr(`Preview: you're Pro (${plan}). ${PRO_DAILY} rewrites a day.`);
   if (t) pick(t);
 });
+document.querySelectorAll('.pack').forEach((b) => b.addEventListener('click', () => {
+  credits += Number(b.dataset.n); closeAll(); renderLeft();
+  $('err').hidden = true; showErr(`Preview: added ${b.dataset.n} credits.`);
+}));
 $('clearBtn').addEventListener('click', () => { $('msg').value = ''; grow(); $('msg').focus(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('scrim').hidden) closeSheet(); });
 $('msg').addEventListener('input', grow);
 
 $('origBubble').textContent = $('msg').value;
