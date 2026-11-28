@@ -12,7 +12,7 @@ Type a message → tap a tone → copy the rewrite. Native iPhone + Android app 
 | Free | $0 | 5 a day, free tones only, with ads |
 | Pro monthly | $1.99 / month | 50 a day, all tones, no ads |
 | Pro yearly | $9.99 / year | 50 a day, all tones, no ads |
-| Top-up packs | $0.99 / $1.99 / $4.99 | +50 / +150 / +500, never expire |
+| Top-up packs | $0.99 / $1.99 / $4.99 | +200 / +500 / +1500, never expire |
 
 Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then opens the **store**.
 
@@ -71,9 +71,9 @@ Claude bills from prepaid credit, so with auto-reload left off you can never be 
    |---|---|---|
    | `saytwice_pro_monthly` | Auto-renewing subscription | $1.99 / month |
    | `saytwice_pro_yearly` | Auto-renewing subscription | $9.99 / year |
-   | `saytwice_credits_50` | Consumable | $0.99 |
-   | `saytwice_credits_150` | Consumable | $1.99 |
-   | `saytwice_credits_500` | Consumable | $4.99 |
+   | `saytwice_credits_200` | Consumable | $0.99 |
+   | `saytwice_credits_500` | Consumable | $1.99 |
+   | `saytwice_credits_1500` | Consumable | $4.99 |
 
    The credit ids must match exactly; the backend looks for them (`backend/netlify/functions/limits.js`).
 3. In RevenueCat:

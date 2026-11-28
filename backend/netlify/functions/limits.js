@@ -13,9 +13,12 @@ const FREE_PER_IP_DAILY = Number(process.env.FREE_PER_IP_DAILY_LIMIT || 30);
 // Store product id -> rewrites it adds. These ids must match the products
 // you create in App Store Connect, Google Play and RevenueCat.
 const CREDIT_PACKS = {
+  saytwice_credits_200: 200, // $0.99
+  saytwice_credits_500: 500, // $1.99
+  saytwice_credits_1500: 1500, // $4.99
+  // Older pack sizes, kept so any already-bought credits still count. Not sold any more.
   saytwice_credits_50: 50,
   saytwice_credits_150: 150,
-  saytwice_credits_500: 500,
 };
 
 const store = () => getStore({ name: 'saytwice-usage', consistency: 'strong' });
