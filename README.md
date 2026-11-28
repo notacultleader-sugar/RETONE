@@ -11,8 +11,7 @@ Type a message → tap a tone → copy the rewrite. Native iPhone + Android app 
 |---|---|---|
 | Free | $0 | 5 a day, free tones only |
 | Pro monthly | $1.99 / month | 50 a day, all tones |
-| Pro yearly | $4.99 / year | 50 a day, all tones |
-| Pro lifetime | $19.99 once | 50 a day, all tones |
+| Pro yearly | $9.99 / year | 50 a day, all tones |
 | Top-up packs | $0.99 / $1.99 / $4.99 | +50 / +150 / +500, never expire |
 
 Daily rewrites refresh at midnight UTC (evening in North America). When they run out, the app uses top-up credits, then opens the **store**.
@@ -71,16 +70,15 @@ Claude bills from prepaid credit, so with auto-reload left off you can never be 
    | Product id | Type | Price |
    |---|---|---|
    | `saytwice_pro_monthly` | Auto-renewing subscription | $1.99 / month |
-   | `saytwice_pro_yearly` | Auto-renewing subscription | $4.99 / year |
-   | `saytwice_pro_lifetime` | Non-consumable (one-time) | $19.99 |
+   | `saytwice_pro_yearly` | Auto-renewing subscription | $9.99 / year |
    | `saytwice_credits_50` | Consumable | $0.99 |
    | `saytwice_credits_150` | Consumable | $1.99 |
    | `saytwice_credits_500` | Consumable | $4.99 |
 
    The credit ids must match exactly; the backend looks for them (`backend/netlify/functions/limits.js`).
 3. In RevenueCat:
-   - Create an **entitlement** called `pro` and attach the three Pro products to it (not the credit packs).
-   - Make the **default Offering** with the three Pro products as Monthly, Annual and Lifetime packages.
+   - Create an **entitlement** called `pro` and attach the two Pro products to it (not the credit packs).
+   - Make the **default Offering** with the two Pro products as Monthly and Annual packages.
    - Make a second Offering with the identifier `credits` holding the three credit packs. The in-app store reads this offering, so packs you add or reprice show up without an app update (new pack ids also need adding to `limits.js`).
 4. In RevenueCat **Paywalls**, design the Pro paywall for the default offering (no code; the app shows whatever you design there). The credits offering doesn't need a paywall; the app's own store screen shows it.
 5. **Project settings → API keys:**

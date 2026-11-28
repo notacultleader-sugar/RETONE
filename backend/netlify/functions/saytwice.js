@@ -43,7 +43,7 @@ async function getSubscriber(userId) {
   return data?.subscriber || null;
 }
 
-// Monthly, yearly and lifetime all unlock the same entitlement.
+// Monthly and yearly (and any future lifetime unlock) all unlock the same entitlement.
 function hasPro(subscriber) {
   const entitlement = process.env.PRO_ENTITLEMENT || 'pro';
   const ent = subscriber?.entitlements?.[entitlement];
