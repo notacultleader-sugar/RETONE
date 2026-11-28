@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert, StyleShe
 import Purchases from 'react-native-purchases';
 import * as Haptics from 'expo-haptics';
 import { CREDITS_OFFERING } from './config';
+import { adPrivacyOptionsRequired, showAdPrivacyOptions } from './ads';
 
 const INK = '#0b0b12';
 const TEXT = '#f6f4ff';
@@ -18,6 +19,11 @@ const amountOf = (pkg) => Number(pkg.product.identifier.match(/credits_(\d+)/)?.
 export default function Store({ visible, onClose, isPro, left, accent, onBought, onGoPro }) {
   const [packs, setPacks] = useState(null);
   const [buying, setBuying] = useState(null);
+  const [adChoices, setAdChoices] = useState(false); // Europe etc.: a way to change ad consent later
+
+  useEffect(() => {
+    if (visible && !isPro) adPrivacyOptionsRequired().then(setAdChoices);
+  }, [visible, isPro]);
 
   useEffect(() => {
     if (!visible || packs) return;
@@ -81,7 +87,12 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
 
         {!isPro && (
           <TouchableOpacity style={styles.pro} onPress={() => { onClose(); onGoPro(); }}>
-            <Text style={styles.proText}>Or go Pro: every tone, 50 a day</Text>
+            <Text style={styles.proText}>Or go Pro: every tone, 50 a day, no ads</Text>
+          </TouchableOpacity>
+        )}
+        {!isPro && adChoices && (
+          <TouchableOpacity style={styles.adChoices} onPress={showAdPrivacyOptions}>
+            <Text style={styles.adChoicesText}>Ad privacy choices</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -114,5 +125,7 @@ const styles = StyleSheet.create({
   price: { alignSelf: 'stretch', alignItems: 'center', backgroundColor: TEXT, borderRadius: 999, paddingVertical: 8, minHeight: 34, justifyContent: 'center' },
   priceText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: INK },
   pro: { alignItems: 'center', paddingVertical: 10 },
+  adChoices: { alignItems: 'center', marginTop: -8 },
+  adChoicesText: { fontFamily: 'DMSans_400Regular', fontSize: 12, color: MUTED },
   proText: { fontFamily: 'DMSans_700Bold', fontSize: 14, color: TEXT, textDecorationLine: 'underline' },
 });
