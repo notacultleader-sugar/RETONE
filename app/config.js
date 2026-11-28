@@ -21,5 +21,5 @@ export const CREDITS_OFFERING = 'credits';
 export const AD_UNIT_IOS = 'ca-app-pub-YOUR_ID/YOUR_IOS_UNIT';
 export const AD_UNIT_ANDROID = 'ca-app-pub-YOUR_ID/YOUR_ANDROID_UNIT';
 
-// Free users see one full-screen ad every this many rewrites (never on the first one).
-export const ADS_EVERY = 2;
+// Free users see one full-screen ad every this many rewrites (1 = every rewrite).
+export const ADS_EVERY = 1;

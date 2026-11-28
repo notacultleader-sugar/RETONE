@@ -124,7 +124,7 @@ The app icon is `app/assets/icon.png` (and `adaptive-icon.png` for Android); rep
 
 ## Step 5b: Ads in the free version (Google AdMob)
 
-Free users see one full-screen ad every 2nd rewrite (never the first). It plays while the AI writes, so it adds no waiting, and video ads can be skipped after about 5 seconds. Pro users never see ads. The code is in `app/ads.js`; change how often with `ADS_EVERY` in `app/config.js`.
+Free users see a full-screen ad on every rewrite. It plays while the AI writes, so it adds no waiting, and video ads can be skipped after about 5 seconds. Pro users never see ads. The code is in `app/ads.js`; change how often with `ADS_EVERY` (2 = every 2nd rewrite) in `app/config.js`.
 
 Until your own ids are in, the app shows Google's **test ads**, which pay nothing. To switch to real ads:
 

@@ -3,7 +3,7 @@
 // How it works:
 //  - Every ADS_EVERY-th rewrite a free user starts, a full-screen ad plays while the AI writes,
 //    so it doesn't add any waiting. Video ads can be skipped after about 5 seconds.
-//  - The very first rewrite never shows an ad.
+//  - If an ad hasn't finished loading yet (e.g. right after opening the app), that rewrite has none.
 //  - Before any ad loads we ask for consent where the law needs it (Europe/UK/some US states,
 //    Google's own pop-up) and, on iPhone, Apple's "Allow tracking?" prompt. Saying no still
 //    shows ads, just not personalised ones.
