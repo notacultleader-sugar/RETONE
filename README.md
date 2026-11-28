@@ -104,7 +104,7 @@ One-time setup:
 
 1. **Add the app in Codemagic:** Add application, connect GitHub, pick the `RETONE` repo. Codemagic finds `codemagic.yaml` by itself.
 2. **Apple:**
-   - In App Store Connect, create the app (bundle ID `ca.notacult.apps.saytwice`). Copy its **Apple ID** number (App Information page) into `APP_STORE_APPLE_ID` in `codemagic.yaml`.
+   - In App Store Connect, create the app (bundle ID `ca.notacult.apps.saytwice`). Its **Apple ID** (6840389186) is already set as `APP_STORE_APPLE_ID` in `codemagic.yaml`.
    - In App Store Connect, **Users and Access → Integrations → App Store Connect API**, create a key with App Manager access and download it.
    - In Codemagic, **Team settings → Integrations → Developer Portal**, add that key and name it `codemagic`.
    - In Apple Developer, **Certificates, Identifiers & Profiles → Identifiers** (needed for the iPhone keyboard):
