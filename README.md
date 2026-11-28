@@ -126,15 +126,19 @@ The app icon is `app/assets/icon.png` (and `adaptive-icon.png` for Android); rep
 
 Free users see a full-screen ad on every rewrite. It plays while the AI writes, so it adds no waiting, and video ads can be skipped after about 5 seconds. Pro users never see ads. The code is in `app/ads.js`; change how often with `ADS_EVERY` (2 = every 2nd rewrite) in `app/config.js`.
 
-Until your own ids are in, the app shows Google's **test ads**, which pay nothing. To switch to real ads:
+Development builds always show Google's **test ads** (they pay nothing). Release builds (TestFlight, Play testing, the stores) show **no ads at all** until your real ad unit ids are in, so test ads can never ship by mistake. To switch to real ads:
 
 1. Make an AdMob account at https://admob.google.com and add the app twice (iOS and Android).
 2. Put each app's **App ID** (has a `~`) in `app/app.json`, under `react-native-google-mobile-ads`: `iosAppId` and `androidAppId`.
 3. In each app make an **Interstitial** ad unit, and put its **ad unit ID** (has a `/`) in `app/config.js` as `AD_UNIT_IOS` and `AD_UNIT_ANDROID`.
-4. In AdMob, **Privacy & messaging**, create a **European regulations** message (GDPR). The app shows it only where the law requires.
+4. In AdMob, **Privacy & messaging**, create and **publish** a **European regulations** (GDPR) message, and check the **US state regulations** one. If this is missing, AdMob gets zero ad requests and nothing looks broken (this cost days on NYX).
 5. Add an `app-ads.txt` file to your website with the line AdMob gives you (Apps → app-ads.txt), and put that website in both store listings.
 
-Before any ad, the app asks for consent where required, and on iPhone shows Apple's "Allow tracking?" prompt. Saying no still shows ads, just not personalised.
+Before any ad, the app runs Google's consent check (shown only where the law requires). A yes is remembered; a no or a failed check is asked again next launch. The app asks only for **non-personalised** ads, so there's no tracking and no Apple "Allow tracking?" pop-up (non-personalised ads pay a little less). Every ad step has a time limit, so an ad can never freeze the app.
+
+**Why no ads?** Tap the SAYTWICE logo 7 times quickly: a status box shows the ad mode, consent, and the last ad or store problem.
+
+After each store approves the app, open AdMob → Apps, find **"Limited ad serving: Add store"** and link the live listing (once for iPhone, once for Android).
 
 Never tap your own real ads; AdMob can close the account for it. Test with the test ads.
 
@@ -144,9 +148,12 @@ From TestFlight / internal testing, submit for review in App Store Connect and P
 
 **Before submitting:**
 - A privacy policy page (messages are sent to Anthropic's Claude AI to be rewritten; say so). Also say the free version shows ads from Google AdMob, which may use the device's advertising ID.
-- Ads in the store forms: App Store **App Privacy** answers must include *Device ID* and *Advertising data* collected for **Third-party advertising**, with tracking = yes (because of the ATT prompt). Google Play: answer **Contains ads = Yes**, and in **Data safety** and the **Advertising ID** form say the app uses the advertising ID for advertising.
+- Ads in the store forms: App Store **App Privacy** answers must include *Device ID* and *Advertising data* collected for **Third-party advertising**, plus *Coarse location*, *Product interaction* and *Crash/Performance data* (AdMob), all **not used for tracking** (the app asks only for non-personalised ads). Google Play: answer **Contains ads = Yes**; in **Data safety** declare Approximate location, App interactions, Crash logs and Diagnostics, and Device or other IDs, collected and shared with Google for advertising; and say yes on the **Advertising ID** form.
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
-- Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
+- Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default). The Get more rewrites sheet also has Restore, Manage subscription (Pro), Terms and Privacy links.
+- In the RevenueCat paywall editor, add Terms (Apple's standard EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/) and Privacy (https://saytwice.netlify.app/privacy/) links, and put both links at the end of the App Store description (NYX was rejected under 3.1.2 without the EULA link).
+- In RevenueCat, the Pro offering (Monthly + Yearly) must be the one marked **Current**, not the starter "default" one. The app checks this and retries for ~30 seconds before showing the paywall.
+- When submitting the first version, attach the Pro subscriptions to it in App Store Connect.
 
 ## The iPhone keyboard
 

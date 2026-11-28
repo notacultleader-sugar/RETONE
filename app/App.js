@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, StyleSheet,
-  Alert, Platform, KeyboardAvoidingView, Animated, Easing, useWindowDimensions, Linking,
+  Alert, Platform, KeyboardAvoidingView, Animated, Easing, useWindowDimensions, Linking, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -17,7 +17,8 @@ import { ExtensionStorage } from '@bacons/apple-targets';
 
 import MoodBackground from './MoodBackground';
 import Store from './Store';
-import { startAds, adForRewrite } from './ads';
+import { startAds, adForRewrite, adStatus } from './ads';
+import { withTimeout, offeringsWithRetry, getLastStoreError } from './rc';
 import { TONES } from './tones';
 import {
   API_URL, REVENUECAT_IOS_KEY, REVENUECAT_ANDROID_KEY, PRO_ENTITLEMENT,
@@ -140,7 +141,7 @@ function Main() {
         apiKey: Platform.OS === 'ios' ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY,
       });
       Purchases.getAppUserID().then(setUserId).catch(() => {});
-      Purchases.getCustomerInfo().then((info) => setIsPro(hasPro(info))).catch(() => {})
+      withTimeout(Purchases.getCustomerInfo()).then((info) => setIsPro(hasPro(info))).catch(() => {})
         .finally(() => setProKnown(true));
       const listener = (info) => setIsPro(hasPro(info));
       Purchases.addCustomerInfoUpdateListener(listener);
@@ -154,19 +155,50 @@ function Main() {
   // --- Ads (free version only) --------------------------------------------
   useEffect(() => { if (proKnown && !isPro) startAds(); }, [proKnown, isPro]);
 
+  // Guests can buy: no sign-in. The paywall shows the store's own price, Restore, and Terms/Privacy
+  // (set those links in the RevenueCat paywall editor).
+  const [storeBusy, setStoreBusy] = useState(false);
   const openPaywall = useCallback(async () => {
+    if (storeBusy) return false;
+    setStoreBusy(true);
+    // Make sure RevenueCat has a Current offering with real packages before showing the paywall,
+    // retrying for ~30s because Apple's test store can be slow to wake up.
+    const offering = await offeringsWithRetry((o) => (o?.current?.availablePackages?.length ? o.current : null));
+    setStoreBusy(false);
+    if (!offering) {
+      return new Promise((resolve) => Alert.alert(
+        'Couldn\'t reach the store',
+        'Check your connection and try again.',
+        [{ text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Try again', onPress: () => resolve(openPaywallRef.current()) }],
+      ));
+    }
     try {
-      const outcome = await RevenueCatUI.presentPaywall();
+      const outcome = await RevenueCatUI.presentPaywall({ offering });
       if (outcome === PAYWALL_RESULT.PURCHASED || outcome === PAYWALL_RESULT.RESTORED) {
-        const info = await Purchases.getCustomerInfo();
+        const info = await withTimeout(Purchases.getCustomerInfo());
         setIsPro(hasPro(info));
         return hasPro(info);
       }
     } catch (e) {
-      Alert.alert('Store unavailable', 'Purchases aren\'t set up on this build yet.');
+      Alert.alert('Store unavailable', e?.message || 'Try again in a moment.');
     }
     return false;
-  }, []);
+  }, [storeBusy]);
+  const openPaywallRef = useRef(openPaywall);
+  openPaywallRef.current = openPaywall;
+
+  // Hidden status screen: tap the logo 7 times. Shows why ads or the store might not be working.
+  const logoTaps = useRef({ n: 0, t: 0 });
+  const onLogoTap = () => {
+    const now = Date.now();
+    const lt = logoTaps.current;
+    lt.n = now - lt.t < 1500 ? lt.n + 1 : 1;
+    lt.t = now;
+    if (lt.n < 7) return;
+    lt.n = 0;
+    Alert.alert('Status', `${adStatus()}\n\nPro: ${isPro ? 'yes' : 'no'}\nStore: ${getLastStoreError() || 'no problems'}\nUser: ${userId || 'unknown'}`);
+  };
 
   // --- Rewrites left -----------------------------------------------------
   const refreshLeft = useCallback(async () => {
@@ -269,7 +301,7 @@ function Main() {
           >
             {/* header */}
             <View style={styles.header}>
-              <Text style={[styles.logo, { fontSize: 22 * L.k }]}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
+              <Text onPress={onLogoTap} suppressHighlighting style={[styles.logo, { fontSize: 22 * L.k }]}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
               <View style={styles.headerRight}>
               {Platform.OS === 'ios' && (
                 <TouchableOpacity onPress={showKeyboardSetup} style={[styles.pill, styles.pillPro]} accessibilityLabel="Set up the Saytwice keyboard">
@@ -415,6 +447,12 @@ function Main() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      {storeBusy && (
+        <View style={styles.busy} pointerEvents="auto">
+          <ActivityIndicator color={TEXT} />
+          <Text style={styles.busyText}>Connecting to the store…</Text>
+        </View>
+      )}
       <Store
         visible={storeOpen}
         onClose={() => setStoreOpen(false)}
@@ -486,6 +524,8 @@ function TypingDots() {
 
 const styles = StyleSheet.create({
   app: { flex: 1 },
+  busy: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  busyText: { fontFamily: F.medium, fontSize: 15, color: TEXT },
   column: { flex: 1, width: '100%', maxWidth: COLUMN_MAX, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 12 },
   columnCompact: { gap: 8, paddingTop: 4 },
   columnTablet: { paddingTop: 16, paddingBottom: 16 },
