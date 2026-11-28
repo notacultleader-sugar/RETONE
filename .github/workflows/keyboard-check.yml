@@ -1,0 +1,23 @@
+# Checks that the Saytwice iPhone keyboard (app/targets/keyboard) still compiles.
+# No signing and no upload: it only builds the keyboard for the iPhone simulator.
+name: Keyboard builds
+on:
+  pull_request:
+    paths: ['app/targets/**', 'app/app.json', 'app/package.json', '.github/workflows/keyboard-check.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && npm ci
+      - run: cd app && npx expo prebuild --platform ios --no-install
+      - name: Build the keyboard target
+        run: |
+          cd app/ios
+          xcodebuild -project Saytwice.xcodeproj -target SaytwiceKeyboard \
+            -sdk iphonesimulator -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          exit ${PIPESTATUS[0]}

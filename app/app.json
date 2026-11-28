@@ -18,6 +18,11 @@
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight"
         ]
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.ca.notacult.apps.saytwice"
+        ]
       }
     },
     "android": {
@@ -32,7 +37,8 @@
       "expo-status-bar",
       "expo-splash-screen",
       "expo-font",
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "@bacons/apple-targets"
     ]
   }
 }

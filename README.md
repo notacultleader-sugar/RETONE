@@ -107,7 +107,11 @@ One-time setup:
    - In App Store Connect, create the app (bundle ID `ca.notacult.apps.saytwice`). Copy its **Apple ID** number (App Information page) into `APP_STORE_APPLE_ID` in `codemagic.yaml`.
    - In App Store Connect, **Users and Access → Integrations → App Store Connect API**, create a key with App Manager access and download it.
    - In Codemagic, **Team settings → Integrations → Developer Portal**, add that key and name it `codemagic`.
-   - In Codemagic, **Team settings → Code signing identities**, generate an iOS distribution certificate and fetch the App Store provisioning profile for the bundle ID.
+   - In Apple Developer, **Certificates, Identifiers & Profiles → Identifiers** (needed for the iPhone keyboard):
+     - Add an **App Group** `group.ca.notacult.apps.saytwice`.
+     - Open the app's ID `ca.notacult.apps.saytwice`, tick **App Groups**, Configure, pick that group, Save.
+     - Add an **App ID** `ca.notacult.apps.saytwice.keyboard` (description "Saytwice Keyboard"), tick **App Groups**, pick the same group.
+   - In Codemagic, **Team settings → Code signing identities**, generate an iOS distribution certificate and fetch the App Store provisioning profiles for **both** `ca.notacult.apps.saytwice` and `ca.notacult.apps.saytwice.keyboard` (if a profile isn't listed, create it in Apple Developer under **Profiles → + → App Store Connect** first). Codemagic picks up the keyboard's profile by itself because its bundle ID starts with the app's.
 3. **Android:**
    - Make an upload key once, and keep the file and passwords somewhere safe (lose it and you need Google's help to replace it):
      `keytool -genkey -v -keystore saytwice-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
@@ -127,9 +131,22 @@ From TestFlight / internal testing, submit for review in App Store Connect and P
 - Age rating: because of Flirty/Spicy, answer the store questionnaires honestly; expect 17+ (iOS) / Mature (Android)
 - Apple requires a **Restore purchases** button: keep it switched on in your RevenueCat paywall design (it is by default)
 
+## The iPhone keyboard
+
+`app/targets/keyboard` is a Saytwice keyboard for iPhone and iPad (Swift, added to the Xcode project on `expo prebuild` by `@bacons/apple-targets`).
+
+- A mood bar on top: swipe it to change mood (the keyboard glows in that mood's colours), **double-tap** it to rewrite what's in the text box in that mood. ↺ undoes the last rewrite.
+- Below it, a normal full keyboard, so it works for everyday typing with no rewriting.
+- It uses the same server, account, Pro tones and daily limits as the app. The app shares the user id, Pro status and server address with it through the App Group `group.ca.notacult.apps.saytwice`, so the app has to be opened once first.
+- It needs **Allow Full Access** to reach the server. Nothing typed is sent until the mood bar is double-tapped; then only the text in that box (or the selected text) is sent.
+- The ⌨️ button in the app shows people how to turn it on.
+- Tone list for the keyboard: `app/targets/keyboard/Tones.swift` (keep in sync with `app/tones.js`).
+
+**App Store:** in the privacy policy and App Review notes, say the keyboard asks for Full Access only to send the text the user chooses to rewrite to the Saytwice server, and that it doesn't store or log keystrokes.
+
 ## Changing the tones
 
 - Buttons, which are free, and each tone's colours and headline word: `app/tones.js`
 - What the AI is told for each tone: `backend/netlify/functions/tones.js`
 
-Keep the `id`s the same in both files. To make a tone free, set `free: true` in **both**.
+Keep the `id`s the same in both files (and in `app/targets/keyboard/Tones.swift` for the keyboard). To make a tone free, set `free: true` in **all of them**.
