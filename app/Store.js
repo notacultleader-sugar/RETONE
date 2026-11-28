@@ -12,7 +12,7 @@ const MUTED = 'rgba(246,244,255,0.62)';
 const GLASS = 'rgba(255,255,255,0.07)';
 const EDGE = 'rgba(255,255,255,0.14)';
 
-// "saytwice_credits_150" -> 150. Same ids as backend/netlify/functions/limits.js.
+// "saytwice_credits_200" -> 200. Same ids as backend/netlify/functions/limits.js.
 const amountOf = (pkg) => Number(pkg.product.identifier.match(/credits_(\d+)/)?.[1] || 0);
 
 // Bottom sheet where anyone can buy rewrite credit packs. Prices come from the
@@ -93,7 +93,7 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
                 <TouchableOpacity key={pkg.identifier} style={[styles.pack, n === biggest && { borderColor: accent }]}
                   onPress={() => buy(pkg)} disabled={!!buying}>
                   {n === biggest && <Text style={[styles.best, { backgroundColor: accent }]}>BEST VALUE</Text>}
-                  <Text style={styles.amount}>+{n}</Text>
+                  <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>+{n}</Text>
                   <Text style={styles.unit}>rewrites</Text>
                   <View style={styles.price}>
                     {buying === pkg.identifier
