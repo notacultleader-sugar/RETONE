@@ -64,7 +64,7 @@ Claude bills from prepaid credit, so with auto-reload left off you can never be 
 ## Step 3: Set up the paywall in RevenueCat
 
 1. Create a project at https://app.revenuecat.com and add an **iOS app** and an **Android app**
-   (bundle ID / package: `ca.thesocietybarbers.saytwice`, or whatever you change it to).
+   (bundle ID / package: `ca.notacult.apps.saytwice`, or whatever you change it to).
 2. In App Store Connect and Google Play Console, create these products (use the same ids on both stores):
 
    | Product id | Type | Price |
@@ -104,7 +104,7 @@ One-time setup:
 
 1. **Add the app in Codemagic:** Add application, connect GitHub, pick the `RETONE` repo. Codemagic finds `codemagic.yaml` by itself.
 2. **Apple:**
-   - In App Store Connect, create the app (bundle ID `ca.thesocietybarbers.saytwice`). Copy its **Apple ID** number (App Information page) into `APP_STORE_APPLE_ID` in `codemagic.yaml`.
+   - In App Store Connect, create the app (bundle ID `ca.notacult.apps.saytwice`). Copy its **Apple ID** number (App Information page) into `APP_STORE_APPLE_ID` in `codemagic.yaml`.
    - In App Store Connect, **Users and Access → Integrations → App Store Connect API**, create a key with App Manager access and download it.
    - In Codemagic, **Team settings → Integrations → Developer Portal**, add that key and name it `codemagic`.
    - In Codemagic, **Team settings → Code signing identities**, generate an iOS distribution certificate and fetch the App Store provisioning profile for the bundle ID.

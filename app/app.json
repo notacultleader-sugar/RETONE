@@ -8,7 +8,7 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#12151f",
     "ios": {
-      "bundleIdentifier": "ca.thesocietybarbers.saytwice",
+      "bundleIdentifier": "ca.notacult.apps.saytwice",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "ca.thesocietybarbers.saytwice",
+      "package": "ca.notacult.apps.saytwice",
       "permissions": [],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
