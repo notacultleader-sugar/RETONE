@@ -3,7 +3,7 @@
 Type a message → tap a tone → copy the rewrite. Native iPhone + Android app from one codebase.
 
 - **Free:** Calmer, Professional
-- **Pro (paywall):** Kinder, Firmer, Apologetic, Funnier, Confident, Shorter, Flirty, Spicy, Fired Up, Passive-Aggro, Pirate
+- **Pro (paywall):** Kinder, Firmer, Apologetic, Funnier, Confident, Shorter, Flirty, Spicy, Fired Up, Passive-Aggro, Pirate, Shakespeare
 
 ## Plans and limits
 
