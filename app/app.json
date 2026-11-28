@@ -4,15 +4,29 @@
     "slug": "saytwice",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#12151f",
     "ios": {
       "bundleIdentifier": "ca.thesocietybarbers.saytwice",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "ca.thesocietybarbers.saytwice",
-      "permissions": []
-    }
+      "permissions": [],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07070c"
+      }
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-splash-screen",
+      "expo-font",
+      "./plugins/withReleaseSigning"
+    ]
   }
 }

@@ -7,5 +7,24 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "android": "expo run:android"
+  },
+  "dependencies": {
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/unbounded": "^0.4.1",
+    "expo": "^58.1.0",
+    "expo-clipboard": "~58.0.4",
+    "expo-dev-client": "~58.0.22",
+    "expo-font": "~58.0.12",
+    "expo-haptics": "~58.0.8",
+    "expo-linear-gradient": "~58.0.4",
+    "expo-splash-screen": "~58.0.15",
+    "expo-status-bar": "~58.0.5",
+    "expo-system-ui": "~58.0.7",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-purchases": "^12.0.0",
+    "react-native-purchases-ui": "^12.0.0",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-svg": "15.16.0"
   }
 }
