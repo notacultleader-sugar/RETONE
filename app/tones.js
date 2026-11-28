@@ -23,4 +23,5 @@ export const TONES = [
   { id: 'angrier',      label: 'Fired Up',      word: 'louder',   emoji: '🔥', free: false, a: '#ff5a1f', b: '#ff1f3d', confirm: true },
   { id: 'passive',      label: 'Passive-Aggro', word: 'sweeter',  emoji: '🙂', free: false, a: '#ffe066', b: '#ff6b9d' },
   { id: 'pirate',       label: 'Pirate',        word: 'ahoy matey-er', emoji: '🏴‍☠️', free: false, a: '#2bd4a8', b: '#1b6f8f' },
+  { id: 'irish',        label: 'Irish',         word: 'in Irish', emoji: '🇮🇪', free: false, a: '#2fd67a', b: '#ff9a3c' },
 ];

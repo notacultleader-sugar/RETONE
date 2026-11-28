@@ -55,4 +55,8 @@ module.exports = {
     free: false,
     prompt: 'Rewrite it in the voice of a pirate. Keep the meaning clear.',
   },
+  irish: {
+    free: false,
+    prompt: 'Translate it into Irish (Gaeilge), the language. Use natural, everyday modern Irish (An Caighdeán Oifigiúil spelling, with all the fadas) that a fluent speaker would actually text. Keep the meaning and the casualness. Write the whole reply in Irish only, with no English and no translation notes.',
+  },
 };
