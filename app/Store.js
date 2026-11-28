@@ -91,7 +91,9 @@ export default function Store({ visible, onClose, isPro, left, accent, onBought,
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  // Full width on phones; on tablets it stays phone-sized and centred instead of stretching.
   sheet: {
+    width: '100%', maxWidth: 560, alignSelf: 'center',
     backgroundColor: '#14141d', borderTopLeftRadius: 28, borderTopRightRadius: 28,
     borderWidth: 1, borderColor: EDGE, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 36, gap: 12,
   },
