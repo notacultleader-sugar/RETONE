@@ -11,7 +11,7 @@ workflows:
       groups:
         - google_play                   # holds GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
       vars:
-        PACKAGE_NAME: ca.thesocietybarbers.saytwice
+        PACKAGE_NAME: ca.notacult.apps.saytwice
       node: 20
     scripts:
       - name: Install packages
@@ -43,7 +43,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: ca.thesocietybarbers.saytwice
+        bundle_identifier: ca.notacult.apps.saytwice   # also picks up the keyboard's profile (ca.notacult.apps.saytwice.keyboard)
       vars:
         APP_STORE_APPLE_ID: 0000000000  # replace with the Apple ID number from App Store Connect
       node: 20

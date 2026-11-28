@@ -9,6 +9,7 @@
     "android": "expo run:android"
   },
   "dependencies": {
+    "@bacons/apple-targets": "5.0.0",
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/unbounded": "^0.4.1",
     "expo": "^58.1.0",

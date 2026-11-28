@@ -7,6 +7,7 @@
 // a, b        -> the tone's two colours (screen glow, tile, bubble)
 //
 // Keep the `id` values in sync with backend/netlify/functions/tones.js
+// and the keyboard's list in targets/keyboard/Tones.swift
 
 export const TONES = [
   { id: 'calmer',       label: 'Calmer',        word: 'calmer',   emoji: '🧊', free: true, a: '#3fc8ff', b: '#6f6bff' },

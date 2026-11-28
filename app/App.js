@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, StyleSheet,
-  Alert, Platform, KeyboardAvoidingView, Animated, Easing, useWindowDimensions,
+  Alert, Platform, KeyboardAvoidingView, Animated, Easing, useWindowDimensions, Linking,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +13,7 @@ import { useFonts, Unbounded_800ExtraBold, Unbounded_900Black } from '@expo-goog
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import Purchases from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import { ExtensionStorage } from '@bacons/apple-targets';
 
 import MoodBackground from './MoodBackground';
 import Store from './Store';
@@ -36,6 +37,24 @@ const F = {
   medium: 'DMSans_500Medium',
   bold: 'DMSans_700Bold',
 };
+
+// Shared with the Saytwice iPhone keyboard (app/targets/keyboard) through this App Group.
+const keyboardStorage = Platform.OS === 'ios' ? new ExtensionStorage('group.ca.notacult.apps.saytwice') : null;
+function shareWithKeyboard(values) {
+  if (!keyboardStorage) return;
+  try { Object.entries(values).forEach(([k, v]) => keyboardStorage.set(k, v)); } catch (e) {}
+}
+
+function showKeyboardSetup() {
+  Alert.alert(
+    'Saytwice keyboard',
+    'Type anywhere with your mood keyboard. Swipe the bar on top to change mood, double-tap it to rewrite what you typed.\n\n'
+      + 'To turn it on: Settings › General › Keyboard › Keyboards › Add New Keyboard › Saytwice. '
+      + 'Then tap Saytwice and turn on Allow Full Access (needed to reach the rewrite server).\n\n'
+      + 'Nothing you type is sent until you double-tap the mood bar.',
+    [{ text: 'Later', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) }],
+  );
+}
 
 function hasPro(customerInfo) {
   return !!customerInfo?.entitlements?.active?.[PRO_ENTITLEMENT];
@@ -157,6 +176,10 @@ function Main() {
 
   useEffect(() => { if (userId) refreshLeft(); }, [userId, isPro, refreshLeft]);
 
+  // The keyboard reads these to rewrite with the same account, Pro status and limits as the app.
+  useEffect(() => { shareWithKeyboard({ apiUrl: API_URL, isPro: isPro ? 1 : 0 }); }, [isPro]);
+  useEffect(() => { if (userId) shareWithKeyboard({ userId }); }, [userId]);
+
   // Restore lives on the paywall screen (RevenueCat paywalls include a Restore button).
 
   // --- Rewrite ---------------------------------------------------------
@@ -238,6 +261,12 @@ function Main() {
             {/* header */}
             <View style={styles.header}>
               <Text style={[styles.logo, { fontSize: 22 * L.k }]}>SAY<Text style={{ color: active.a }}>TWICE</Text></Text>
+              <View style={styles.headerRight}>
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity onPress={showKeyboardSetup} style={[styles.pill, styles.pillPro]} accessibilityLabel="Set up the Saytwice keyboard">
+                  <Text style={styles.pillProText}>{winW < 380 ? '⌨️' : '⌨️ Keyboard'}</Text>
+                </TouchableOpacity>
+              )}
               {isPro ? (
                 <TouchableOpacity onPress={() => setStoreOpen(true)} style={[styles.pill, styles.pillPro]}>
                   <Text style={styles.pillProText}>Pro ✓</Text>
@@ -247,6 +276,7 @@ function Main() {
                   <Text style={styles.pillText}>Unlock all</Text>
                 </TouchableOpacity>
               )}
+              </View>
             </View>
 
             {!tight && (
@@ -452,6 +482,7 @@ const styles = StyleSheet.create({
   columnTablet: { paddingTop: 16, paddingBottom: 16 },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: { fontFamily: F.black, fontSize: 22, color: TEXT, letterSpacing: -0.8 },
   pill: { backgroundColor: TEXT, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
   pillText: { fontFamily: F.bold, fontSize: 13, color: INK },

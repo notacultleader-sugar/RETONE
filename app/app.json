@@ -8,7 +8,7 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#12151f",
     "ios": {
-      "bundleIdentifier": "ca.thesocietybarbers.saytwice",
+      "bundleIdentifier": "ca.notacult.apps.saytwice",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -18,10 +18,15 @@
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight"
         ]
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.ca.notacult.apps.saytwice"
+        ]
       }
     },
     "android": {
-      "package": "ca.thesocietybarbers.saytwice",
+      "package": "ca.notacult.apps.saytwice",
       "permissions": [],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -32,7 +37,8 @@
       "expo-status-bar",
       "expo-splash-screen",
       "expo-font",
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "@bacons/apple-targets"
     ]
   }
 }
